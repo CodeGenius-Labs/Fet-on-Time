@@ -1,3 +1,4 @@
+import 'package:fetontime/screens/login.dart';
 import 'package:flutter/material.dart';
 
 void main() => runApp(const MyApp());
@@ -10,14 +11,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Material App',
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Material App Bar'),
-        ),
-        body: const Center(
-          child: Text('Hello World'),
-        ),
-      ),
+      routes: {
+        'login' : (_) => login(),
+      },
+      initialRoute: 'login',
     );
   }
 }
