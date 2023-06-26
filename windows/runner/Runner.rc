@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "traductor" "\0"
+            VALUE "FileDescription", "fetontime" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "traductor" "\0"
+            VALUE "InternalName", "fetontime" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2023 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "traductor.exe" "\0"
-            VALUE "ProductName", "traductor" "\0"
+            VALUE "OriginalFilename", "fetontime.exe" "\0"
+            VALUE "ProductName", "fetontime" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
