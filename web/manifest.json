@@ -1,6 +1,6 @@
 {
-    "name": "traductor",
-    "short_name": "traductor",
+    "name": "fetontime",
+    "short_name": "fetontime",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
