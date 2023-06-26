@@ -1,3 +1,4 @@
+import 'package:fetontime/screens/home.dart';
 import 'package:fetontime/screens/login.dart';
 import 'package:flutter/material.dart';
 
@@ -13,6 +14,7 @@ class MyApp extends StatelessWidget {
       title: 'Fet On Time',
       routes: {
         'login' : (_) => login(),
+        'home' : (_) => home(),
       },
       initialRoute: 'login',
     );
