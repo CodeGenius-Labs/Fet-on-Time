@@ -1,11 +1,15 @@
 // ignore: unused_import
 import 'package:fetontime/screens/home.dart';
+import '../base_conection.dart';
 import 'package:fetontime/widgets/input_decoration.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 //Marlon es puto
 class login extends StatelessWidget {
-  const login({super.key});
+  //const login({super.key});
+  String _email = ''; // Variable para almacenar el correo electrónico
+  String _password = ''; // Variable para almacenar la contraseña
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +67,9 @@ class login extends StatelessWidget {
                                 labelText: 'Correo Electronico',
                                 icono:
                                     const Icon(Icons.alternate_email_rounded)),
+                            onChanged: (value) {
+                              _email = value; // Actualiza la variable _email cuando el valor cambia
+                            },
                             validator: (value) {
                               String pattern =
                                   r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
@@ -81,6 +88,9 @@ class login extends StatelessWidget {
                                   hintText: '********',
                                   labelText: 'Contraseña',
                                   icono: const Icon(Icons.lock_outlined)),
+                              onChanged: (value) {
+                                _password = value; // Actualiza la variable _password cuando el valor cambia
+                              },
                                   validator: (value) {
                                     return (value != null && value.length >= 6)
                                     ? null
@@ -101,8 +111,35 @@ class login extends StatelessWidget {
                                 style: TextStyle(color: Colors.white),
                               ),
                             ),
-                            onPressed: () {
-                              Navigator.pushReplacementNamed(context, 'home');
+                            onPressed: () async {
+
+                              // Realizar la consulta a la base de datos
+                              final connection = await getConnection();
+                              final result = await connection.query(
+                                'SELECT * FROM directores WHERE email = ? AND password = ?',
+                                [_email, _password],
+                              );
+
+                              await connection.close();
+
+                              if (result.isNotEmpty) {
+                                // Si se encontró un registro, el inicio de sesión es exitoso
+                                // Obtiene el tipo de director de la consulta
+                                String directorType = result.first['programa'];
+
+                                // Guarda el tipo de director en las shared_preferences
+                                SharedPreferences prefs = await SharedPreferences.getInstance();
+                                prefs.setBool('isLoggedIn', true); // Guarda el indicador de autenticación
+                                prefs.setString('directorType', directorType);
+                                Navigator.pushReplacementNamed(context, 'loadinglogin');
+                              } else {
+                                // Si no se encontró un registro, mostrar un mensaje de error
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Correo o contraseña incorrectos.'),
+                                  ),
+                                );
+                              }
                             },
                           ),
                         ],
