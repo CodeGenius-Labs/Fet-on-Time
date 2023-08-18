@@ -1,5 +1,6 @@
 import 'package:fetontime/screens/home.dart';
 import 'package:fetontime/screens/login.dart';
+// ignore: unused_import
 import 'package:fetontime/screens/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
