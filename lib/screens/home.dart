@@ -7,36 +7,130 @@ class home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<String>(
-      future: _getDirectorType(), // Llama a la función que obtiene el tipo de director
+      future: _getDirectorType(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          // Muestra un indicador de carga mientras se obtiene el tipo de director
           return const CircularProgressIndicator();
         } else if (snapshot.hasError) {
-          // Maneja el error si ocurre
-          return Center(child: Text('Error al obtener el tipo de director'));
+          return const Center(child: Text('Error al obtener el tipo de director'));
         } else {
-          // Si todo va bien, muestra el contenido de la pantalla de inicio
           final directorType = snapshot.data ?? '';
 
           return Scaffold(
-            appBar: null,
-            body: Center(
-              child: Column(
+            appBar: AppBar(
+              backgroundColor: Color.fromARGB(255, 40, 140, 1), // Color de fondo gris
+              toolbarHeight: 120, // Ajusta esta altura a tu preferencia
+              title: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Tipo de Director: $directorType'),
-                  ElevatedButton(
-                    onPressed: () async {
-                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                      prefs.setBool('isLoggedIn', false); // Elimina el indicador de autenticación
-                      // Agrega aquí la lógica para limpiar cualquier otro dato de autenticación si es necesario
-
-                      Navigator.pushReplacementNamed(context, 'loadinglogin'); // Vuelve a la pantalla de inicio de sesión
-                    },
-                    child: Text('Cerrar Sesión'),
+                  Image.asset(
+                    'assets/logofet.png', // Ruta de tu imagen del logo en la carpeta "assets"
+                    width: 120, // Ancho deseado del logo
+                    height: 120, // Alto deseado del logo
+                  ),
+                  const SizedBox(width: 9),
+                  Text(
+                    'Tipo de Director: $directorType', // Texto en la barra
+                    style: const TextStyle(fontSize: 20), // Tamaño de fuente
                   ),
                 ],
+              ),
+              centerTitle: true, // Centra el título en la barra
+            ),
+            body: Container(
+              color: const Color.fromARGB(120,40,140,1), // Color de fondo gris para la parte blanca
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 19.0),
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 20.0,
+                          mainAxisSpacing: 20.0,
+                        ),
+                        itemCount: 11,
+                        itemBuilder: (context, index) {
+                          int semesterNumber = index + 1;
+                          String semesterText = 'SEMESTRE $semesterNumber';
+                          if (semesterNumber == 10) {
+                            return Visibility(
+                              visible: false,
+                              child: Container(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    // Lógica del botón 10
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green, // Color de fondo verde
+                                  ),
+                                  child: Text(
+                                    semesterText,
+                                    style: const TextStyle(fontSize: 18),
+                                  ),
+                                ),
+                              ),
+                            );
+                          } else if (semesterNumber == 11) {
+                            String semesterText = 'SEMESTRE 10';
+                            return ElevatedButton(
+                              onPressed: () {
+                                // Lógica del botón 11
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green, // Color de fondo verde
+                              ),
+                              child: Center(
+                                child: Text(
+                                  semesterText,
+                                  style: const TextStyle(fontSize: 15.5),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            );
+                          }
+
+                          return ElevatedButton(
+                            onPressed: () {
+                              // Lógica del botón
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green, // Color de fondo verde
+                            ),
+                            child: Center(
+                              child: Text(
+                                semesterText,
+                                style: const TextStyle(fontSize: 15.5),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 40), // Espacio entre los botones y el botón "Cerrar Sesión"
+                    ElevatedButton(
+                      onPressed: () async {
+                        SharedPreferences prefs =
+                            await SharedPreferences.getInstance();
+                        prefs.setBool('isLoggedIn', false);
+                        Navigator.pushReplacementNamed(context, 'loadinglogin');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green, // Color de fondo verde
+                        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 10), // Espacio vertical del botón
+                      ),
+                      child: const Text(
+                        'Cerrar Sesión',
+                        style: TextStyle(fontSize: 22), // Tamaño de fuente aumentado
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -45,7 +139,6 @@ class home extends StatelessWidget {
     );
   }
 
-  // Función para obtener el tipo de director desde las shared_preferences
   Future<String> _getDirectorType() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString('directorType') ?? '';

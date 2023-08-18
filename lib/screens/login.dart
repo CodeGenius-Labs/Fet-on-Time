@@ -5,7 +5,7 @@ import 'package:fetontime/widgets/input_decoration.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-//Marlon es puto
+
 class login extends StatelessWidget {
   //const login({super.key});
   String _email = ''; // Variable para almacenar el correo electrónico
