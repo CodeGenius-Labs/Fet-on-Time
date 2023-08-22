@@ -1,5 +1,6 @@
 import 'package:fetontime/screens/home.dart';
 import 'package:fetontime/screens/login.dart';
+import 'package:fetontime/screens/calendar.dart';
 // ignore: unused_import
 import 'package:fetontime/screens/loading.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ class MyApp extends StatelessWidget {
         'home': (_) => const home(),
         'loading': (_) => LoadingScreen(), // Agrega esta línea
         'loadinglogin': (_) => LoadingScreen(),
+        'calendar': (_) => Calendar(),
       },
       initialRoute: 'loading',
     );

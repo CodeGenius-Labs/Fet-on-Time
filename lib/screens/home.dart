@@ -31,7 +31,7 @@ class home extends StatelessWidget {
                   const SizedBox(width: 9),
                   Text(
                     'Tipo de Director: $directorType', // Texto en la barra
-                    style: const TextStyle(fontSize: 20), // Tamaño de fuente
+                    style: const TextStyle(fontSize: 17), // Tamaño de fuente
                   ),
                 ],
               ),
@@ -55,39 +55,44 @@ class home extends StatelessWidget {
                         itemCount: 11,
                         itemBuilder: (context, index) {
                           int semesterNumber = index + 1;
-                          String semesterText = 'SEMESTRE $semesterNumber';
+                          String semesterText = 'SEMESTRE\n$semesterNumber';
                           if (semesterNumber == 10) {
                             return Visibility(
                               visible: false,
                               child: Container(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: () {
-                                    // Lógica del botón 10
+                                  onPressed: () async {
+                                    Navigator.pushNamed(context, 'calendar');
+                                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                                    prefs.setString('semestreType', '$semesterNumber');
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green, // Color de fondo verde
                                   ),
                                   child: Text(
                                     semesterText,
-                                    style: const TextStyle(fontSize: 18),
+                                    style: const TextStyle(fontSize: 16),
                                   ),
                                 ),
                               ),
                             );
                           } else if (semesterNumber == 11) {
-                            String semesterText = 'SEMESTRE 10';
+                            String semesterText = 'SEMESTRE\n10';
                             return ElevatedButton(
-                              onPressed: () {
-                                // Lógica del botón 11
+                              onPressed: () async {
+                                Navigator.pushNamed(context, 'calendar');
+                                SharedPreferences prefs = await SharedPreferences.getInstance();
+                                prefs.setString('semestreType', '10');
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green, // Color de fondo verde
+                                padding: EdgeInsets.all(0),
                               ),
                               child: Center(
                                 child: Text(
                                   semesterText,
-                                  style: const TextStyle(fontSize: 15.5),
+                                  style: const TextStyle(fontSize: 17),
                                   textAlign: TextAlign.center,
                                 ),
                               ),
@@ -95,16 +100,19 @@ class home extends StatelessWidget {
                           }
 
                           return ElevatedButton(
-                            onPressed: () {
-                              // Lógica del botón
+                            onPressed: () async {
+                              Navigator.pushNamed(context, 'calendar');
+                              SharedPreferences prefs = await SharedPreferences.getInstance();
+                              prefs.setString('semestreType', '$semesterNumber');
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green, // Color de fondo verde
+                              padding: EdgeInsets.all(0),
                             ),
                             child: Center(
                               child: Text(
                                 semesterText,
-                                style: const TextStyle(fontSize: 15.5),
+                                style: const TextStyle(fontSize: 17),
                                 textAlign: TextAlign.center,
                               ),
                             ),

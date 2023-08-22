@@ -1,5 +1,3 @@
-// ignore: unused_import
-import 'package:fetontime/screens/home.dart';
 import '../base_conection.dart';
 import 'package:fetontime/widgets/input_decoration.dart';
 import 'package:flutter/material.dart';
