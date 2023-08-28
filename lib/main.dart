@@ -5,8 +5,12 @@ import 'package:fetontime/screens/calendar.dart';
 import 'package:fetontime/screens/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
-void main() => runApp(const MyApp());
+void main() {
+  initializeDateFormatting().then((_) => runApp(MyApp()));
+}
+//void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

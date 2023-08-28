@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 class Calendar extends StatefulWidget {
   @override
@@ -57,7 +58,7 @@ class _CalendarState extends State<Calendar> {
       children: [
         Container(
           child: TableCalendar(
-            locale: "en_US",
+            locale: "es_ES",
             rowHeight: 80,
             headerStyle: const HeaderStyle(
               formatButtonVisible: false,
