@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 
+// ignore: must_be_immutable
 class login extends StatelessWidget {
-  //const login({super.key});
   String _email = ''; // Variable para almacenar el correo electrónico
   String _password = ''; // Variable para almacenar la contraseña
 
