@@ -1,7 +1,11 @@
+import '../base_conection.dart'; // Asegúrate de que la ruta sea la correcta
+import 'events.dart'; // Asegúrate de tener la ruta correcta aquí
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
-import '../events.dart'; // Asegúrate de tener la ruta correcta aquí
+import 'package:mysql1/mysql1.dart'; // Importa la librería mysql1
+import 'package:intl/intl.dart';
+
 
 class Calendar extends StatefulWidget {
   @override
@@ -10,9 +14,11 @@ class Calendar extends StatefulWidget {
 
 class _CalendarState extends State<Calendar> {
   String semestre = '';
+  String directorType = ''; // Declaración de la variable directorType
   DateTime today = DateTime.now();
   DateTime? _selectedDay;
   late ValueNotifier<List<Event>> _selectedEvents;
+  MySqlConnection? _connection; // Variable para la conexión
 
   @override
   void initState() {
@@ -22,12 +28,26 @@ class _CalendarState extends State<Calendar> {
         semestre = value;
       });
     });
+    // Llama a _getDirectorType para obtener el valor de directorType desde SharedPreferences
+    _getDirectorType().then((value) {
+      setState(() {
+        directorType = value;
+      });
+    });
     _selectedEvents = ValueNotifier(_getEventsForDay(today));
+
+    // Obtén la conexión a la base de datos desde el archivo de conexión
+    getConnection().then((connection) {
+      setState(() {
+        _connection = connection;
+      });
+    });
   }
 
   @override
   void dispose() {
     _selectedEvents.dispose();
+    _connection?.close(); // Cierra la conexión al finalizar
     super.dispose();
   }
 
@@ -36,6 +56,50 @@ class _CalendarState extends State<Calendar> {
     String semestreType = prefs.getString('semestreType') ?? '';
     return semestreType;
   }
+
+  Future<void> _updateEvents() async {
+    if (_selectedDay != null && directorType.isNotEmpty && _connection != null) {
+      final dayOfWeek = DateFormat('EEEE', 'es_ES').format(_selectedDay!).toLowerCase();
+      final filteredEvents = await fetchFilteredEventsFromDatabase(dayOfWeek, directorType);
+
+      setState(() {
+        events[_selectedDay!] = filteredEvents;
+      });
+    }
+  }
+  Future<List<Event>> fetchFilteredEventsFromDatabase(String dayOfWeek, String directorType) async {
+    try {
+      final results = await _connection!.query(
+        'SELECT c.nombre AS nombre_clase, d.Nombre AS nombre_docente, '
+            'CONCAT(s.bloque, "-", s.aula) AS ubicacion_salon,'
+            'CONCAT(c.hora_inicial, "-", c.hora_final) AS hora_clase FROM clases c '
+            'INNER JOIN docentes d ON c.idDocentes = d.idDocentes '
+            'INNER JOIN salones s ON c.idSalones = s.idSalones '
+            'INNER JOIN fecha_clase fc ON c.idfecha_clase = fc.idfecha_clase '
+            'WHERE fc.dias = ? AND c.programa = ? AND c.semestre = ?',
+        [dayOfWeek, directorType, semestre],
+      );
+
+
+
+      final events = <Event>[];
+      for (var row in results) {
+        events.add(Event(
+          row['nombre_clase'],
+          row['nombre_docente'],
+          row['ubicacion_salon'],
+          row['hora_clase'],// Reemplaza con el nombre correcto de la columna del nombre del evento
+        ));
+      }
+
+      return events;
+    } catch (e) {
+      // Si hubo un error en la búsqueda, puedes manejarlo aquí, por ejemplo, imprimiendo un mensaje de error.
+      print('Error en la búsqueda en la base de datos: $e');
+      return []; // Retorna una lista vacía en caso de error.
+    }
+  }
+
 
   Map<DateTime, List<Event>> events = {};
   TextEditingController _eventController = TextEditingController();
@@ -46,16 +110,46 @@ class _CalendarState extends State<Calendar> {
       _selectedDay = day;
       _selectedEvents.value = _getEventsForDay(_selectedDay!);
     });
+    _updateEvents(); // Actualiza los eventos al seleccionar un día
   }
 
   List<Event> _getEventsForDay(DateTime day) {
     return events[day] ?? [];
   }
+  void _showEventDetails(Event event) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(event.nombre_clase),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Docente: ${event.nombre_docente}"),
+              Text("Ubicación: ${event.ubicacion_salon}"),
+              Text("Hora: ${event.hora_clase}"),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text("Cerrar"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Color.fromARGB(255, 40, 140, 1),
         title: semestre.isEmpty
             ? const CircularProgressIndicator()
             : Text('Semestre $semestre'),
@@ -82,20 +176,6 @@ class _CalendarState extends State<Calendar> {
                   ),
                 ),
                 actions: [
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_selectedDay != null) {
-                        events.addAll({
-                          _selectedDay!: [Event(_eventController.text)]
-                        });
-                        setState(() {
-                          _eventController.clear();
-                        });
-                        Navigator.of(context).pop();
-                      }
-                    },
-                    child: const Text("Guardar"),
-                  ),
                 ],
               );
             },
@@ -118,6 +198,13 @@ class _CalendarState extends State<Calendar> {
               formatButtonVisible: false,
               titleCentered: true,
             ),
+            calendarStyle: const CalendarStyle(selectedDecoration: BoxDecoration(
+              color:Color.fromRGBO(40, 140, 1, 1.0),
+              shape: BoxShape.circle
+            ), todayDecoration: BoxDecoration(
+                color:Color.fromARGB(120,40,140,1),
+                shape: BoxShape.circle
+            )),
             availableGestures: AvailableGestures.all,
             selectedDayPredicate: (day) => isSameDay(day, today),
             focusedDay: today,
@@ -131,8 +218,8 @@ class _CalendarState extends State<Calendar> {
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey), // Agregar un borde alrededor de la lista
-              borderRadius: BorderRadius.circular(10), // Ajustar el radio de los bordes del contenedor
+              //border: Border.all(color: Colors.green), // Agregar un borde alrededor de la lista
+              borderRadius: BorderRadius.circular(1), // Ajustar el radio de los bordes del contenedor
             ),
             child: ValueListenableBuilder<List<Event>>(
               valueListenable: _selectedEvents,
@@ -144,12 +231,16 @@ class _CalendarState extends State<Calendar> {
                       margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey), // Ajusta el color y el estilo del borde
+                        border: Border.all(color: Colors.green), // Ajusta el color y el estilo del borde
                         borderRadius: BorderRadius.circular(10), // Ajusta el radio de los bordes
                       ),
                       child: ListTile(
-                        title: Text(selectedEvents[index].name),
+                        title: Text(selectedEvents[index].nombre_clase),
+                        onTap: () {
+                          _showEventDetails(selectedEvents[index]);
+                        },
                       ),
+
                     );
                   },
                 );
@@ -160,4 +251,20 @@ class _CalendarState extends State<Calendar> {
       ],
     );
   }
+  Future<String> _getDirectorType() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('directorType') ?? '';
+  }
 }
+
+class Event {
+  String nombre_clase;
+  String nombre_docente;
+  String ubicacion_salon;
+  String hora_clase;
+
+  Event(this.nombre_clase, this.nombre_docente, this.ubicacion_salon, this.hora_clase);
+}
+
+
+
