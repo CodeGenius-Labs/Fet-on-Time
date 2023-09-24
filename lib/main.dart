@@ -1,5 +1,6 @@
 import 'package:fetontime/screens/editar.dart';
 import 'package:fetontime/screens/eliminar.dart';
+import 'package:fetontime/screens/crear.dart';
 import 'package:fetontime/screens/home.dart';
 import 'package:fetontime/screens/login.dart';
 import 'package:fetontime/screens/calendar.dart';
@@ -30,7 +31,8 @@ class MyApp extends StatelessWidget {
         'loadinglogin': (_) => LoadingScreen(),
         'calendar': (_) => Calendar(),
         'editar': (_) => EditarPage(),
-        'eliminar': (_) => EliminarPage()
+        'eliminar': (_) => EliminarPage(),
+        'crear': (_) => CrearPage(),
       },
       initialRoute: 'loading',
     );

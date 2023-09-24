@@ -1,3 +1,4 @@
+import 'package:fetontime/screens/crear.dart';
 import 'package:fetontime/screens/editar.dart';
 import 'eliminar.dart';
 import '../base_conection.dart'; // Asegúrate de que la ruta sea la correcta
@@ -135,38 +136,58 @@ class _CalendarState extends State<Calendar> {
             ],
           ),
           actions: [
-  
-  ElevatedButton(
-    onPressed: () async{
-      Navigator.of(context).pop();
-      Navigator.push(context,MaterialPageRoute(builder: (context) =>EditarPage(),),);
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      prefs.setString('nombre_clase', '${event.nombre_clase}');
-      prefs.setString('jornada', '${event.jornada}');
-},
-    child: Text('Editar'),
-  ),
-    ElevatedButton(
-    onPressed: () async{
-       Navigator.of(context).pop();
-      Navigator.push(context,MaterialPageRoute(builder: (context) =>EliminarPage(),),);
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      prefs.setString('nombre_clase', '${event.nombre_clase}');
-      prefs.setString('jornada', '${event.jornada}');
-    },
-    child: Text("Eliminar"),
-  ),
-  ElevatedButton(
-    onPressed: () {
-      Navigator.of(context).pop();
-    },
-    child: Text("Cerrar"),
-  ),
-],
+            ButtonBar(
+              alignment: MainAxisAlignment.center, // Centra los botones horizontalmente
+              children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => EditarPage()),
+                    );
+                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                    prefs.setString('nombre_clase', '${event.nombre_clase}');
+                    prefs.setString('jornada', '${event.jornada}');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    primary: Color.fromRGBO(40, 140, 1, 1),
+                  ),
+                  child: Text('Editar'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => EliminarPage()),
+                    );
+                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                    prefs.setString('nombre_clase', '${event.nombre_clase}');
+                    prefs.setString('jornada', '${event.jornada}');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    primary: Color.fromRGBO(40, 140, 1, 1),
+                  ),
+                  child: Text("Eliminar"),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    primary: Color.fromRGBO(40, 140, 1, 1),
+                  ),
+                  child: Text("Cerrar"),
+                ),
+              ],
+            ),
+          ],
         );
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -185,22 +206,9 @@ class _CalendarState extends State<Calendar> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                scrollable: true,
-                title: const Text("Nombre Evento"),
-                content: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: TextField(
-                    controller: _eventController,
-                  ),
-                ),
-                actions: [
-                ],
-              );
-            },
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => CrearPage()), // Reemplaza OtraVentana con el nombre de tu página de destino
           );
         },
         child: const Icon(Icons.add),
