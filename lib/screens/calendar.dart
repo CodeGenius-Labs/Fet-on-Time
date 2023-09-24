@@ -1,5 +1,6 @@
+import 'package:fetontime/screens/editar.dart';
+import 'eliminar.dart';
 import '../base_conection.dart'; // Asegúrate de que la ruta sea la correcta
-import 'events.dart'; // Asegúrate de tener la ruta correcta aquí
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -70,7 +71,7 @@ class _CalendarState extends State<Calendar> {
   Future<List<Event>> fetchFilteredEventsFromDatabase(String dayOfWeek, String directorType) async {
     try {
       final results = await _connection!.query(
-        'SELECT c.nombre AS nombre_clase, d.Nombre AS nombre_docente, '
+        'SELECT c.nombre AS nombre_clase, c.jornada AS jornada, d.Nombre AS nombre_docente, '
             'CONCAT(s.bloque, "-", s.aula) AS ubicacion_salon,'
             'CONCAT(c.hora_inicial, "-", c.hora_final) AS hora_clase FROM clases c '
             'INNER JOIN docentes d ON c.idDocentes = d.idDocentes '
@@ -86,6 +87,7 @@ class _CalendarState extends State<Calendar> {
       for (var row in results) {
         events.add(Event(
           row['nombre_clase'],
+          row['jornada'],
           row['nombre_docente'],
           row['ubicacion_salon'],
           row['hora_clase'],// Reemplaza con el nombre correcto de la columna del nombre del evento
@@ -129,22 +131,42 @@ class _CalendarState extends State<Calendar> {
               Text("Docente: ${event.nombre_docente}"),
               Text("Ubicación: ${event.ubicacion_salon}"),
               Text("Hora: ${event.hora_clase}"),
+              Text("Jornada: ${event.jornada}")
             ],
           ),
           actions: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text("Cerrar"),
-            ),
-          ],
+  
+  ElevatedButton(
+    onPressed: () async{
+      Navigator.of(context).pop();
+      Navigator.push(context,MaterialPageRoute(builder: (context) =>EditarPage(),),);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setString('nombre_clase', '${event.nombre_clase}');
+      prefs.setString('jornada', '${event.jornada}');
+},
+    child: Text('Editar'),
+  ),
+    ElevatedButton(
+    onPressed: () async{
+       Navigator.of(context).pop();
+      Navigator.push(context,MaterialPageRoute(builder: (context) =>EliminarPage(),),);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setString('nombre_clase', '${event.nombre_clase}');
+      prefs.setString('jornada', '${event.jornada}');
+    },
+    child: Text("Eliminar"),
+  ),
+  ElevatedButton(
+    onPressed: () {
+      Navigator.of(context).pop();
+    },
+    child: Text("Cerrar"),
+  ),
+],
         );
       },
     );
   }
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -259,11 +281,12 @@ class _CalendarState extends State<Calendar> {
 
 class Event {
   String nombre_clase;
+  String jornada;
   String nombre_docente;
   String ubicacion_salon;
   String hora_clase;
 
-  Event(this.nombre_clase, this.nombre_docente, this.ubicacion_salon, this.hora_clase);
+  Event(this.nombre_clase, this.jornada, this.nombre_docente, this.ubicacion_salon, this.hora_clase);
 }
 
 
