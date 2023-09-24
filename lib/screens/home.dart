@@ -126,6 +126,7 @@ class home extends StatelessWidget {
                         SharedPreferences prefs =
                             await SharedPreferences.getInstance();
                         prefs.setBool('isLoggedIn', false);
+                        prefs.setString('status', 'login');
                         Navigator.pushReplacementNamed(context, 'loadinglogin');
                       },
                       style: ElevatedButton.styleFrom(

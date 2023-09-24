@@ -17,13 +17,16 @@ class _LoadingScreenState extends State<LoadingScreen> {
   Future<void> _simulateLogin() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    String status = prefs.getString('status') ?? '';
 
     await Future.delayed(Duration(seconds: 2)); // Esperar 2 segundos (simulación)
 
-    if (isLoggedIn) {
+    if (status == 'home' && isLoggedIn ) {
       Navigator.pushReplacementNamed(context, 'home');
-    } else {
+    } else if (status == 'login' && !isLoggedIn) {
       Navigator.pushReplacementNamed(context, 'login');
+    } else if (status == 'calendar' && isLoggedIn){
+      Navigator.pushReplacementNamed(context, 'calendar');
     }
   }
 

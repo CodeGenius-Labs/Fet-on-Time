@@ -129,6 +129,7 @@ class login extends StatelessWidget {
                                 SharedPreferences prefs = await SharedPreferences.getInstance();
                                 prefs.setBool('isLoggedIn', true); // Guarda el indicador de autenticación
                                 prefs.setString('directorType', directorType);
+                                prefs.setString('status', 'home');
                                 Navigator.pushReplacementNamed(context, 'loadinglogin');
                               } else {
                                 // Si no se encontró un registro, mostrar un mensaje de error
