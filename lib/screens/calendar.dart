@@ -8,7 +8,6 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:mysql1/mysql1.dart'; // Importa la librería mysql1
 import 'package:intl/intl.dart';
 
-
 class Calendar extends StatefulWidget {
   @override
   _CalendarState createState() => _CalendarState();
@@ -60,29 +59,33 @@ class _CalendarState extends State<Calendar> {
   }
 
   Future<void> _updateEvents() async {
-    if (_selectedDay != null && directorType.isNotEmpty && _connection != null) {
-      final dayOfWeek = DateFormat('EEEE', 'es_ES').format(_selectedDay!).toLowerCase();
-      final filteredEvents = await fetchFilteredEventsFromDatabase(dayOfWeek, directorType);
+    if (_selectedDay != null &&
+        directorType.isNotEmpty &&
+        _connection != null) {
+      final dayOfWeek =
+          DateFormat('EEEE', 'es_ES').format(_selectedDay!).toLowerCase();
+      final filteredEvents =
+          await fetchFilteredEventsFromDatabase(dayOfWeek, directorType);
 
       setState(() {
         events[_selectedDay!] = filteredEvents;
       });
     }
   }
-  Future<List<Event>> fetchFilteredEventsFromDatabase(String dayOfWeek, String directorType) async {
+
+  Future<List<Event>> fetchFilteredEventsFromDatabase(
+      String dayOfWeek, String directorType) async {
     try {
       final results = await _connection!.query(
         'SELECT c.nombre AS nombre_clase, c.jornada AS jornada, d.Nombre AS nombre_docente, '
-            'CONCAT(s.bloque, "-", s.aula) AS ubicacion_salon,'
-            'CONCAT(c.hora_inicial, "-", c.hora_final) AS hora_clase FROM clases c '
-            'INNER JOIN docentes d ON c.idDocentes = d.idDocentes '
-            'INNER JOIN salones s ON c.idSalones = s.idSalones '
-            'INNER JOIN fecha_clase fc ON c.idfecha_clase = fc.idfecha_clase '
-            'WHERE fc.dias = ? AND c.programa = ? AND c.semestre = ?',
+        'CONCAT(s.bloque, "-", s.aula) AS ubicacion_salon,'
+        'CONCAT(c.hora_inicial, "-", c.hora_final) AS hora_clase FROM clases c '
+        'INNER JOIN docentes d ON c.idDocentes = d.idDocentes '
+        'INNER JOIN salones s ON c.idSalones = s.idSalones '
+        'INNER JOIN fecha_clase fc ON c.idfecha_clase = fc.idfecha_clase '
+        'WHERE fc.dias = ? AND c.programa = ? AND c.semestre = ?',
         [dayOfWeek, directorType, semestre],
       );
-
-
 
       final events = <Event>[];
       for (var row in results) {
@@ -91,18 +94,16 @@ class _CalendarState extends State<Calendar> {
           row['jornada'],
           row['nombre_docente'],
           row['ubicacion_salon'],
-          row['hora_clase'],// Reemplaza con el nombre correcto de la columna del nombre del evento
+          row['hora_clase'],
         ));
       }
 
       return events;
     } catch (e) {
-      // Si hubo un error en la búsqueda, puedes manejarlo aquí, por ejemplo, imprimiendo un mensaje de error.
       print('Error en la búsqueda en la base de datos: $e');
-      return []; // Retorna una lista vacía en caso de error.
+      return [];
     }
   }
-
 
   Map<DateTime, List<Event>> events = {};
   TextEditingController _eventController = TextEditingController();
@@ -119,6 +120,85 @@ class _CalendarState extends State<Calendar> {
   List<Event> _getEventsForDay(DateTime day) {
     return events[day] ?? [];
   }
+
+  Widget content() {
+    return Column(
+      children: [
+        Container(
+          child: TableCalendar(
+            locale: "es_ES",
+            rowHeight: 80,
+            headerStyle: const HeaderStyle(
+              formatButtonVisible: false,
+              titleCentered: true,
+            ),
+            calendarStyle: const CalendarStyle(
+                selectedDecoration: BoxDecoration(
+                    color: Color.fromRGBO(40, 140, 1, 1.0),
+                    shape: BoxShape.circle),
+                todayDecoration: BoxDecoration(
+                    color: Color.fromARGB(120, 40, 140, 1),
+                    shape: BoxShape.circle)),
+            availableGestures: AvailableGestures.all,
+            selectedDayPredicate: (day) => isSameDay(day, today),
+            focusedDay: today,
+            firstDay: DateTime.utc(2010, 10, 16),
+            lastDay: DateTime.utc(2030, 3, 14),
+            onDaySelected: _onDaySelected,
+            eventLoader: _getEventsForDay,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(1),
+            ),
+            child: ValueListenableBuilder<List<Event>>(
+              valueListenable: _selectedEvents,
+              builder: (context, selectedEvents, _) {
+                return ListView.builder(
+                  itemCount: selectedEvents.length,
+                  itemBuilder: (context, index) {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 5, horizontal: 10),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.green),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ListTile(
+                        title: Text(selectedEvents[index].nombre_clase),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                                "Ubicación: ${selectedEvents[index].ubicacion_salon}"),
+                            Text(
+                                "Hora: ${selectedEvents[index].hora_clase.substring(0, 5)} - ${selectedEvents[index].hora_clase.substring(09, 14)}"), // Aquí se muestra el rango de horas sin los segundos
+                          ],
+                        ),
+                        onTap: () {
+                          _showEventDetails(selectedEvents[index]);
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<String> _getDirectorType() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('directorType') ?? '';
+  }
+
   void _showEventDetails(Event event) {
     showDialog(
       context: context,
@@ -131,13 +211,13 @@ class _CalendarState extends State<Calendar> {
             children: [
               Text("Docente: ${event.nombre_docente}"),
               Text("Ubicación: ${event.ubicacion_salon}"),
-              Text("Hora: ${event.hora_clase}"),
+              Text("Hora: ${event.hora_clase.substring(0, 5)} - ${event.hora_clase.substring(09, 14)}"),
               Text("Jornada: ${event.jornada}")
             ],
           ),
           actions: [
             ButtonBar(
-              alignment: MainAxisAlignment.center, // Centra los botones horizontalmente
+              alignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
                   onPressed: () async {
@@ -146,7 +226,8 @@ class _CalendarState extends State<Calendar> {
                       context,
                       MaterialPageRoute(builder: (context) => EditarPage()),
                     );
-                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                    SharedPreferences prefs =
+                        await SharedPreferences.getInstance();
                     prefs.setString('nombre_clase', '${event.nombre_clase}');
                     prefs.setString('jornada', '${event.jornada}');
                   },
@@ -162,7 +243,8 @@ class _CalendarState extends State<Calendar> {
                       context,
                       MaterialPageRoute(builder: (context) => EliminarPage()),
                     );
-                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                    SharedPreferences prefs =
+                        await SharedPreferences.getInstance();
                     prefs.setString('nombre_clase', '${event.nombre_clase}');
                     prefs.setString('jornada', '${event.jornada}');
                   },
@@ -208,82 +290,13 @@ class _CalendarState extends State<Calendar> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => CrearPage()), // Reemplaza OtraVentana con el nombre de tu página de destino
+            MaterialPageRoute(builder: (context) => CrearPage()),
           );
         },
         child: const Icon(Icons.add),
       ),
       body: content(),
     );
-  }
-
-  Widget content() {
-    return Column(
-      children: [
-        Container(
-          child: TableCalendar(
-            locale: "es_ES",
-            rowHeight: 80,
-            headerStyle: const HeaderStyle(
-              formatButtonVisible: false,
-              titleCentered: true,
-            ),
-            calendarStyle: const CalendarStyle(selectedDecoration: BoxDecoration(
-              color:Color.fromRGBO(40, 140, 1, 1.0),
-              shape: BoxShape.circle
-            ), todayDecoration: BoxDecoration(
-                color:Color.fromARGB(120,40,140,1),
-                shape: BoxShape.circle
-            )),
-            availableGestures: AvailableGestures.all,
-            selectedDayPredicate: (day) => isSameDay(day, today),
-            focusedDay: today,
-            firstDay: DateTime.utc(2010, 10, 16),
-            lastDay: DateTime.utc(2030, 3, 14),
-            onDaySelected: _onDaySelected,
-            eventLoader: _getEventsForDay,
-          ),
-        ),
-        const SizedBox(height: 20),
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              //border: Border.all(color: Colors.green), // Agregar un borde alrededor de la lista
-              borderRadius: BorderRadius.circular(1), // Ajustar el radio de los bordes del contenedor
-            ),
-            child: ValueListenableBuilder<List<Event>>(
-              valueListenable: _selectedEvents,
-              builder: (context, selectedEvents, _) {
-                return ListView.builder(
-                  itemCount: selectedEvents.length,
-                  itemBuilder: (context, index) {
-                    return Container(
-                      margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.green), // Ajusta el color y el estilo del borde
-                        borderRadius: BorderRadius.circular(10), // Ajusta el radio de los bordes
-                      ),
-                      child: ListTile(
-                        title: Text(selectedEvents[index].nombre_clase),
-                        onTap: () {
-                          _showEventDetails(selectedEvents[index]);
-                        },
-                      ),
-
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-  Future<String> _getDirectorType() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('directorType') ?? '';
   }
 }
 
@@ -294,8 +307,6 @@ class Event {
   String ubicacion_salon;
   String hora_clase;
 
-  Event(this.nombre_clase, this.jornada, this.nombre_docente, this.ubicacion_salon, this.hora_clase);
+  Event(this.nombre_clase, this.jornada, this.nombre_docente,
+      this.ubicacion_salon, this.hora_clase);
 }
-
-
-
