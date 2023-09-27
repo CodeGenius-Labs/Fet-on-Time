@@ -24,14 +24,16 @@ class home extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Image.asset(
-                    'assets/logofet.png', // Ruta de tu imagen del logo en la carpeta "assets"
-                    width: 120, // Ancho deseado del logo
-                    height: 120, // Alto deseado del logo
+                    'assets/logofet.png',
+                    width: 120,
+                    height: 120,
                   ),
                   const SizedBox(width: 9),
                   Text(
-                    'Tipo de Director: $directorType', // Texto en la barra
-                    style: const TextStyle(fontSize: 17), // Tamaño de fuente
+                    'Tipo de Director: $directorType',
+                    style: TextStyle(
+                      fontSize: _calculateTitleFontSize(context),
+                    ),
                   ),
                 ],
               ),
@@ -146,6 +148,24 @@ class home extends StatelessWidget {
         }
       },
     );
+  }
+
+  double _calculateTitleFontSize(BuildContext context) {
+    // Obtener el ancho de la pantalla utilizando MediaQuery
+    final double screenWidth = MediaQuery.of(context).size.width;
+
+    // Definir el tamaño de fuente base
+    double baseFontSize = 17;
+
+    // Definir un tamaño de fuente menor para pantallas pequeñas
+    if (screenWidth < 365) {
+      baseFontSize = 16;
+    }
+    else if (screenWidth < 320) {
+      baseFontSize = 14;
+    }
+
+    return baseFontSize;
   }
 
   Future<String> _getDirectorType() async {

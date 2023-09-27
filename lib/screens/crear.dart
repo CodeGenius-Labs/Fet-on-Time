@@ -16,6 +16,7 @@ class _CrearPageState extends State<CrearPage> {
   String selectedSalon = "";
   String selectedSemestre = "1"; // Valor inicial
 
+  String directorType = '';
   int selectedDocenteId = -1;
   int selectedSalonId = -1;
   int selectedFechaClaseId = -1;
@@ -37,6 +38,11 @@ class _CrearPageState extends State<CrearPage> {
         _connection = connection;
       });
       loadDropdownOptions(); // Cargar opciones de desplegables al obtener la conexión
+    });
+    _getDirectorType().then((value) {
+      setState(() {
+        directorType = value;
+      });
     });
   }
   void loadDropdownOptions() async {
@@ -196,7 +202,7 @@ class _CrearPageState extends State<CrearPage> {
   }
 
   Future<List<Docente>> _fetchDocentes() async {
-    final results = await _connection!.query('SELECT * FROM docentes');
+    final results = await _connection!.query('SELECT * FROM docentes WHERE programa = ?', [directorType]);
     return results
         .map((row) => Docente(row['idDocentes'], row['Nombre']))
         .toList();
@@ -206,6 +212,10 @@ class _CrearPageState extends State<CrearPage> {
     return results
         .map((row) => FechaClase(row['idfecha_clase'], row['dias']))
         .toList();
+  }
+  Future<String> _getDirectorType() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('directorType') ?? '';
   }
 
   // Las funciones fetchFechasClase y getConnection siguen siendo similares
