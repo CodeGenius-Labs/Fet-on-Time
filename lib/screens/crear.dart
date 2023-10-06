@@ -9,6 +9,69 @@ class CrearPage extends StatefulWidget {
   _CrearPageState createState() => _CrearPageState();
 }
 
+class Aula {
+  final int id;
+  final String nombre;
+  final int pupitres;
+  final int mesas;
+  final int sillas;
+  final int enchufes;
+  final int ventiladores;
+  final int aires;
+  final int tv;
+  final int videobeen;
+
+
+  Aula({required this.id, required this.nombre, required this.pupitres, required this.mesas, required this.sillas, required this.enchufes, required this.ventiladores, required this.aires, required this.tv, required this.videobeen});
+}
+
+List<Aula> listaDeAulas = [];
+
+class ListaDeAulasWidget extends StatelessWidget {
+  final List<Aula> aulas;
+
+  ListaDeAulasWidget({required this.aulas});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Lista de Aulas'),
+      ),
+      body: ListView.builder(
+        itemCount: aulas.length,
+        itemBuilder: (BuildContext context, int index) {
+          final aula = aulas[index];
+          return Card(
+            child: ListTile(
+              title: Text(aula.nombre),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text("Pupitres: ${aula.pupitres}"),
+                  Text("Mesas: ${aula.mesas}"),
+                  Text("Sillas: ${aula.sillas}"),
+                  Text("Enchufes: ${aula.enchufes}"),
+                  Text("Ventiladores: ${aula.ventiladores}"),
+                  Text("Aires: ${aula.aires}"),
+                  Text("TV: ${aula.tv}"),
+                  Text("videobeen: ${aula.videobeen}"),
+                  // Agrega más detalles aquí según sea necesario
+                ],
+              ),
+              onTap: () {
+                // Cuando se toca un aula, regresa la ID al screen anterior
+                Navigator.of(context).pop(aula.id);
+              },
+            ),
+          );
+
+        },
+      ),
+    );
+  }
+}
+
 class _CrearPageState extends State<CrearPage> {
   MySqlConnection? _connection;
   String selectedDocente = "";
@@ -20,6 +83,7 @@ class _CrearPageState extends State<CrearPage> {
   int selectedDocenteId = -1;
   int selectedSalonId = -1;
   int selectedFechaClaseId = -1;
+  int selectedIdAula = 0;
   List<DropdownMenuItem<Docente>> docentesDropdown = [];
   List<DropdownMenuItem<FechaClase>> fechaClaseDropdown = [];
 
@@ -50,6 +114,8 @@ class _CrearPageState extends State<CrearPage> {
     //final salones = await _fetchSalones(); // Consultar la lista de salones
     final fechasClase =
     await _fetchFechasClase(); // Consultar la lista de fechas de clase
+    // Consulta a la base de datos para obtener la lista de aulas
+    final aulas = await _fetchAulas();
 
     setState(() {
       // Construir elementos de desplegable para docentes
@@ -68,7 +134,42 @@ class _CrearPageState extends State<CrearPage> {
             .toString()), // Ajusta esto según la estructura de tus fechas
       ))
           .toList();
+      // Asigna la lista de aulas obtenida de la base de datos
+      listaDeAulas = aulas;
     });
+  }
+  // Define una función para consultar las aulas desde la base de datos
+  Future<List<Aula>> _fetchAulas() async {
+    final results = await _connection!.query('SELECT CONCAT(bloque, " ", aula) AS nombre_completo, idSalones, pupitres, mesas, sillas, enchufes, ventiladores, aires, tv, videobeen FROM salones'); // Ajusta la consulta según tu esquema de base de datos
+    return results.map((row) {
+      return Aula(
+        id: row['idSalones'],
+        nombre: row['nombre_completo'],
+        pupitres: row['pupitres'],
+        mesas: row['mesas'],
+        sillas: row['sillas'],
+        enchufes: row['enchufes'],
+        ventiladores: row['ventiladores'],
+        aires: row['aires'],
+        tv: row['tv'],
+        videobeen: row['videobeen'],
+      );
+    }).toList();
+  }
+
+  void _mostrarListaDeAulas() async {
+    final selectedAulaId = await Navigator.of(context).push<int>(
+      MaterialPageRoute(
+        builder: (context) => ListaDeAulasWidget(aulas: listaDeAulas),
+      ),
+    );
+
+    if (selectedAulaId != null) {
+      // Hacer algo con la ID seleccionada, como almacenarla o mostrarla en pantalla
+      print("ID del aula seleccionada: $selectedAulaId");
+      selectedIdAula = selectedAulaId;
+      print("ID del aula: $selectedIdAula");
+    }
   }
 
   @override
@@ -100,9 +201,7 @@ class _CrearPageState extends State<CrearPage> {
                 hint: Text('Seleccione un Docente'),
               ),
               ElevatedButton(
-                onPressed: () {
-                  // ... Código para seleccionar salón ...
-                },
+                onPressed: _mostrarListaDeAulas,
                 child: Text('Seleccionar Salón'),
               ),
             DropdownButton<FechaClase>(
