@@ -12,17 +12,13 @@ class CrearPage extends StatefulWidget {
 class Aula {
   final int id;
   final String nombre;
-  final int pupitres;
-  final int mesas;
-  final int sillas;
-  final int enchufes;
-  final int ventiladores;
-  final int aires;
-  final int tv;
-  final int videobeen;
+  final Map<String, int> elementos;
 
-
-  Aula({required this.id, required this.nombre, required this.pupitres, required this.mesas, required this.sillas, required this.enchufes, required this.ventiladores, required this.aires, required this.tv, required this.videobeen});
+  Aula({
+    required this.id,
+    required this.nombre,
+    required this.elementos,
+  });
 }
 
 List<Aula> listaDeAulas = [];
@@ -42,22 +38,17 @@ class ListaDeAulasWidget extends StatelessWidget {
         itemCount: aulas.length,
         itemBuilder: (BuildContext context, int index) {
           final aula = aulas[index];
+
+          final elementosWidget = aula.elementos.entries
+              .map((entry) => Text("${entry.key}: ${entry.value}"))
+              .toList();
+
           return Card(
             child: ListTile(
               title: Text(aula.nombre),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text("Pupitres: ${aula.pupitres}"),
-                  Text("Mesas: ${aula.mesas}"),
-                  Text("Sillas: ${aula.sillas}"),
-                  Text("Enchufes: ${aula.enchufes}"),
-                  Text("Ventiladores: ${aula.ventiladores}"),
-                  Text("Aires: ${aula.aires}"),
-                  Text("TV: ${aula.tv}"),
-                  Text("videobeen: ${aula.videobeen}"),
-                  // Agrega más detalles aquí según sea necesario
-                ],
+                children: elementosWidget,
               ),
               onTap: () {
                 // Cuando se toca un aula, regresa la ID al screen anterior
@@ -65,7 +56,6 @@ class ListaDeAulasWidget extends StatelessWidget {
               },
             ),
           );
-
         },
       ),
     );
@@ -86,7 +76,6 @@ class _CrearPageState extends State<CrearPage> {
   int selectedIdAula = 0;
   List<DropdownMenuItem<Docente>> docentesDropdown = [];
   List<DropdownMenuItem<FechaClase>> fechaClaseDropdown = [];
-
 
   TimeOfDay selectedHoraInicio = TimeOfDay.now();
   TimeOfDay selectedHoraFin = TimeOfDay.now();
@@ -109,11 +98,12 @@ class _CrearPageState extends State<CrearPage> {
       });
     });
   }
+
   void loadDropdownOptions() async {
     final docentes = await _fetchDocentes(); // Consultar la lista de docentes
     //final salones = await _fetchSalones(); // Consultar la lista de salones
     final fechasClase =
-    await _fetchFechasClase(); // Consultar la lista de fechas de clase
+        await _fetchFechasClase(); // Consultar la lista de fechas de clase
     // Consulta a la base de datos para obtener la lista de aulas
     final aulas = await _fetchAulas();
 
@@ -121,38 +111,50 @@ class _CrearPageState extends State<CrearPage> {
       // Construir elementos de desplegable para docentes
       docentesDropdown = docentes
           .map((docente) => DropdownMenuItem<Docente>(
-        value: docente,
-        child: Text(docente.nombre),
-      ))
+                value: docente,
+                child: Text(docente.nombre),
+              ))
           .toList();
 
       // Construir elementos de desplegable para fechas de clase
       fechaClaseDropdown = fechasClase
           .map((fechaClase) => DropdownMenuItem<FechaClase>(
-        value: fechaClase,
-        child: Text(fechaClase.fecha
-            .toString()), // Ajusta esto según la estructura de tus fechas
-      ))
+                value: fechaClase,
+                child: Text(fechaClase.fecha
+                    .toString()), // Ajusta esto según la estructura de tus fechas
+              ))
           .toList();
       // Asigna la lista de aulas obtenida de la base de datos
       listaDeAulas = aulas;
     });
   }
+
   // Define una función para consultar las aulas desde la base de datos
   Future<List<Aula>> _fetchAulas() async {
-    final results = await _connection!.query('SELECT CONCAT(bloque, " ", aula) AS nombre_completo, idSalones, pupitres, mesas, sillas, enchufes, ventiladores, aires, tv, videobeen FROM salones'); // Ajusta la consulta según tu esquema de base de datos
+    final results = await _connection!.query(
+        'SELECT CONCAT(bloque, " ", aula) AS nombre_completo, idSalones, pupitres, mesas, sillas, enchufes, ventiladores, aires, tv, videobeen FROM salones');
+
     return results.map((row) {
+      final elementos = <String, int>{};
+      elementos['pupitres'] = row['pupitres'];
+      elementos['mesas'] = row['mesas'];
+      elementos['sillas'] = row['sillas'];
+      elementos['enchufes'] = row['enchufes'];
+      elementos['ventiladores'] = row['ventiladores'];
+      elementos['aires'] = row['aires'];
+      elementos['tv'] = row['tv'];
+      elementos['videobeen'] = row['videobeen'];
+
+      // Filtra elementos diferentes de 0
+      final filteredElementos = elementos.entries
+          .where((entry) => entry.value != 0)
+          .map((entry) => MapEntry(entry.key, entry.value))
+          .toList();
+
       return Aula(
         id: row['idSalones'],
         nombre: row['nombre_completo'],
-        pupitres: row['pupitres'],
-        mesas: row['mesas'],
-        sillas: row['sillas'],
-        enchufes: row['enchufes'],
-        ventiladores: row['ventiladores'],
-        aires: row['aires'],
-        tv: row['tv'],
-        videobeen: row['videobeen'],
+        elementos: Map.fromEntries(filteredElementos),
       );
     }).toList();
   }
@@ -190,8 +192,9 @@ class _CrearPageState extends State<CrearPage> {
                 value: selectedDocenteId == -1
                     ? null
                     : docentesDropdown
-                    .firstWhere((item) => item.value!.id == selectedDocenteId)
-                    .value,
+                        .firstWhere(
+                            (item) => item.value!.id == selectedDocenteId)
+                        .value,
                 items: docentesDropdown,
                 onChanged: (docente) {
                   setState(() {
@@ -204,21 +207,21 @@ class _CrearPageState extends State<CrearPage> {
                 onPressed: _mostrarListaDeAulas,
                 child: Text('Seleccionar Salón'),
               ),
-            DropdownButton<FechaClase>(
-              value: selectedFechaClaseId == -1
-                  ? null
-                  : fechaClaseDropdown
-                  .firstWhere(
-                      (item) => item.value!.id == selectedFechaClaseId)
-                  .value,
-              items: fechaClaseDropdown,
-              onChanged: (fechaClase) {
-                setState(() {
-                  selectedFechaClaseId = fechaClase!.id;
-                });
-              },
-              hint: Text('Seleccione una Fecha de Clase'),
-            ),
+              DropdownButton<FechaClase>(
+                value: selectedFechaClaseId == -1
+                    ? null
+                    : fechaClaseDropdown
+                        .firstWhere(
+                            (item) => item.value!.id == selectedFechaClaseId)
+                        .value,
+                items: fechaClaseDropdown,
+                onChanged: (fechaClase) {
+                  setState(() {
+                    selectedFechaClaseId = fechaClase!.id;
+                  });
+                },
+                hint: Text('Seleccione una Fecha de Clase'),
+              ),
               ListTile(
                 title: Text('Hora de Inicio'),
                 subtitle: Text(
@@ -301,17 +304,20 @@ class _CrearPageState extends State<CrearPage> {
   }
 
   Future<List<Docente>> _fetchDocentes() async {
-    final results = await _connection!.query('SELECT * FROM docentes WHERE programa = ?', [directorType]);
+    final results = await _connection!
+        .query('SELECT * FROM docentes WHERE programa = ?', [directorType]);
     return results
         .map((row) => Docente(row['idDocentes'], row['Nombre']))
         .toList();
   }
+
   Future<List<FechaClase>> _fetchFechasClase() async {
     final results = await _connection!.query('SELECT * FROM fecha_clase');
     return results
         .map((row) => FechaClase(row['idfecha_clase'], row['dias']))
         .toList();
   }
+
   Future<String> _getDirectorType() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString('directorType') ?? '';
@@ -326,12 +332,14 @@ class _CrearPageState extends State<CrearPage> {
     super.dispose();
   }
 }
+
 class Docente {
   final int id;
   final String nombre;
 
   Docente(this.id, this.nombre);
 }
+
 class FechaClase {
   final int id;
   final String fecha;
