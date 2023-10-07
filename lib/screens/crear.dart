@@ -23,6 +23,8 @@ class Aula {
 
 List<Aula> listaDeAulas = [];
 
+List<String> opcionesJornada = ['diurna', 'nocturna'];
+
 class ListaDeAulasWidget extends StatelessWidget {
   final List<Aula> aulas;
 
@@ -52,6 +54,11 @@ class ListaDeAulasWidget extends StatelessWidget {
               ),
               onTap: () {
                 // Cuando se toca un aula, regresa la ID al screen anterior
+                final snackBar = SnackBar(
+                  content: Text('Aula seleccionada Correctamente ${aula.nombre}'),
+                );
+
+                ScaffoldMessenger.of(context).showSnackBar(snackBar);
                 Navigator.of(context).pop(aula.id);
               },
             ),
@@ -67,7 +74,9 @@ class _CrearPageState extends State<CrearPage> {
   String selectedDocente = "";
   String selectedFechaClase = "";
   String selectedSalon = "";
-  String selectedSemestre = "1"; // Valor inicial
+  String semestre = '';
+  String jornada = 'diurna';
+  TextEditingController nombreClaseController = TextEditingController();
 
   String directorType = '';
   int selectedDocenteId = -1;
@@ -91,6 +100,11 @@ class _CrearPageState extends State<CrearPage> {
         _connection = connection;
       });
       loadDropdownOptions(); // Cargar opciones de desplegables al obtener la conexión
+    });
+    obtenerSemestreType().then((value) {
+      setState(() {
+        semestre = value;
+      });
     });
     _getDirectorType().then((value) {
       setState(() {
@@ -186,6 +200,7 @@ class _CrearPageState extends State<CrearPage> {
           child: Column(
             children: <Widget>[
               TextFormField(
+                controller: nombreClaseController, // Asigna el controlador aquí
                 decoration: InputDecoration(labelText: 'Nombre de la Clase'),
               ),
               DropdownButton<Docente>(
@@ -290,9 +305,40 @@ class _CrearPageState extends State<CrearPage> {
                   }
                 },
               ),
+              DropdownButton<String>(
+                value: jornada, // Valor seleccionado
+                items: opcionesJornada.map((String opcion) {
+                  return DropdownMenuItem<String>(
+                    value: opcion,
+                    child: Text(opcion),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    jornada = newValue ??
+                        ''; // Actualiza la variable jornada con la opción seleccionada
+                  });
+                },
+              ),
               ElevatedButton(
-                onPressed: () {
-                  // Realizar la acción de guardar la clase en la base de datos
+                onPressed: () async {
+                  // Obtener los valores de los campos y desplegables
+                  final nombreClase = nombreClaseController
+                      .text; // Obtén el valor del campo de nombre de la clase
+                  final docenteId = selectedDocenteId;
+                  final fechaClaseId = selectedFechaClaseId;
+                  final horaInicio = selectedHoraInicio;
+                  final horaFin = selectedHoraFin;
+
+                  // Verificar que se haya seleccionado un aula
+                  if (selectedIdAula == 0) {
+                    // Muestra un mensaje de error o realiza alguna acción de manejo de error
+                    return;
+                  }
+
+                  // Realizar la inserción en la base de datos
+                  await _insertarClase(nombreClase, docenteId, fechaClaseId,
+                      horaInicio, horaFin, selectedIdAula);
                 },
                 child: Text('Guardar Clase'),
               ),
@@ -301,6 +347,122 @@ class _CrearPageState extends State<CrearPage> {
         ),
       ),
     );
+  }
+
+  // Función para insertar la clase en la base de datos
+  Future<void> _insertarClase(
+      String nombreClase,
+      int docenteId,
+      int fechaClaseId,
+      TimeOfDay horaInicio,
+      TimeOfDay horaFin,
+      int aulaId) async {
+    final connection = _connection;
+
+    if (connection == null) {
+      // Manejo de error si la conexión no está disponible
+      return;
+    }
+
+    try {
+      // Formatear las horas de inicio y fin
+      final horaInicioStr = '${horaInicio.hour}:${horaInicio.minute}';
+      final horaFinStr = '${horaFin.hour}:${horaFin.minute}';
+
+      // Consulta para verificar clases que choquen con la nueva clase
+      final results = await connection.query(
+        'SELECT nombre, programa FROM clases WHERE idSalones = ? AND idfecha_clase = ? AND (' +
+            '((hora_inicial <= ? AND hora_final >= ?) OR (hora_inicial >= ? AND hora_final <= ?))' +
+            ')',
+        [
+          aulaId,
+          fechaClaseId,
+          horaInicioStr,
+          horaInicioStr,
+          horaInicioStr,
+          horaFinStr,
+        ],
+      );
+
+      if (results.isNotEmpty) {
+        // Si hay clases que chocan, mostrar un mensaje de error
+        final nombreClaseExistente = results.first['nombre'];
+        final programaClaseExistente = results.first['programa'];
+
+        print('Clase choca con $nombreClaseExistente de $programaClaseExistente');
+
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text('Error'),
+              content: Text(
+                'Ya existe una clase programada en ese horario y aula. Choca con la clase: $nombreClaseExistente de $programaClaseExistente',
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Cierra el cuadro de diálogo de error
+                  },
+                  child: Text('Aceptar'),
+                ),
+              ],
+            );
+          },
+        );
+      } else {
+        // Si no hay clases que choquen, realizar la inserción
+        print(
+            'INSERT INTO clases ($nombreClase, $docenteId, $aulaId, $semestre, $fechaClaseId, $horaInicioStr, $horaFinStr, $directorType, $jornada) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        await connection.query(
+          'INSERT INTO clases (nombre, idDocentes, idSalones, semestre, idfecha_clase, hora_inicial, hora_final, programa, jornada) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [
+            nombreClase,
+            docenteId,
+            aulaId,
+            semestre,
+            fechaClaseId,
+            horaInicioStr,
+            horaFinStr,
+            directorType,
+            jornada
+          ],
+        );
+
+        // Mostrar un mensaje de éxito o realizar alguna acción después de la inserción
+        // Por ejemplo, puedes mostrar un diálogo de éxito o navegar a otra pantalla
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text('Clase Guardada'),
+              content: Text(
+                  'La clase se ha guardado exitosamente en la base de datos.'),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Aceptar'),
+                ),
+              ],
+            );
+          },
+        );
+      }
+    } catch (e) {
+      // Manejo de error en caso de que la inserción falle
+      print('Error al insertar clase: $e');
+      // Puedes mostrar un mensaje de error o realizar alguna otra acción de manejo de error
+    }
+  }
+
+
+  Future<String> obtenerSemestreType() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String semestreType = prefs.getString('semestreType') ?? '';
+    return semestreType;
   }
 
   Future<List<Docente>> _fetchDocentes() async {
