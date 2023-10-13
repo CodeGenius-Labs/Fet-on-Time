@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Para formatear las horas de inicio y fin
+import 'package:intl/intl.dart';
 import '../base_conection.dart';
 import 'package:mysql1/mysql1.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,6 +35,8 @@ class ListaDeAulasWidget extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Lista de Aulas'),
+        backgroundColor:
+            Color.fromARGB(255, 40, 140, 1), // Color de fondo verde
       ),
       body: ListView.builder(
         itemCount: aulas.length,
@@ -55,7 +57,8 @@ class ListaDeAulasWidget extends StatelessWidget {
               onTap: () {
                 // Cuando se toca un aula, regresa la ID al screen anterior
                 final snackBar = SnackBar(
-                  content: Text('Aula seleccionada Correctamente ${aula.nombre}'),
+                  content:
+                      Text('Aula seleccionada Correctamente ${aula.nombre}'),
                 );
 
                 ScaffoldMessenger.of(context).showSnackBar(snackBar);
@@ -192,7 +195,8 @@ class _CrearPageState extends State<CrearPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Crear Clase'),
+        backgroundColor: Color.fromARGB(255, 40, 140, 1),
+        title: Text('Crear Clase', style: TextStyle(color: Colors.white)),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -200,8 +204,21 @@ class _CrearPageState extends State<CrearPage> {
           child: Column(
             children: <Widget>[
               TextFormField(
-                controller: nombreClaseController, // Asigna el controlador aquí
-                decoration: InputDecoration(labelText: 'Nombre de la Clase'),
+                controller: nombreClaseController,
+                decoration: InputDecoration(
+                  labelText: 'Nombre de la Clase',
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.green, width: 2.0),
+                    borderRadius: BorderRadius.circular(
+                        10.0), // Personaliza el radio del borde
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.green, width: 2.0),
+                    borderRadius: BorderRadius.circular(
+                        10.0), // Personaliza el radio del borde
+                  ),
+                  labelStyle: TextStyle(color: Colors.black),
+                ),
               ),
               DropdownButton<Docente>(
                 value: selectedDocenteId == -1
@@ -221,6 +238,9 @@ class _CrearPageState extends State<CrearPage> {
               ElevatedButton(
                 onPressed: _mostrarListaDeAulas,
                 child: Text('Seleccionar Salón'),
+                style: ElevatedButton.styleFrom(
+                  primary: Color.fromRGBO(40, 140, 1, 1.0),
+                ),
               ),
               DropdownButton<FechaClase>(
                 value: selectedFechaClaseId == -1
@@ -306,7 +326,7 @@ class _CrearPageState extends State<CrearPage> {
                 },
               ),
               DropdownButton<String>(
-                value: jornada, // Valor seleccionado
+                value: jornada,
                 items: opcionesJornada.map((String opcion) {
                   return DropdownMenuItem<String>(
                     value: opcion,
@@ -315,33 +335,37 @@ class _CrearPageState extends State<CrearPage> {
                 }).toList(),
                 onChanged: (String? newValue) {
                   setState(() {
-                    jornada = newValue ??
-                        ''; // Actualiza la variable jornada con la opción seleccionada
+                    jornada = newValue ?? '';
                   });
                 },
               ),
-              ElevatedButton(
-                onPressed: () async {
-                  // Obtener los valores de los campos y desplegables
-                  final nombreClase = nombreClaseController
-                      .text; // Obtén el valor del campo de nombre de la clase
-                  final docenteId = selectedDocenteId;
-                  final fechaClaseId = selectedFechaClaseId;
-                  final horaInicio = selectedHoraInicio;
-                  final horaFin = selectedHoraFin;
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: ElevatedButton(
+                  onPressed: () async {
+                    // Obtener los valores de los campos y desplegables
+                    final nombreClase = nombreClaseController.text;
+                    final docenteId = selectedDocenteId;
+                    final fechaClaseId = selectedFechaClaseId;
+                    final horaInicio = selectedHoraInicio;
+                    final horaFin = selectedHoraFin;
 
-                  // Verificar que se haya seleccionado un aula
-                  if (selectedIdAula == 0) {
-                    // Muestra un mensaje de error o realiza alguna acción de manejo de error
-                    return;
-                  }
+                    // Verificar que se haya seleccionado un aula
+                    if (selectedIdAula == 0) {
+                      // Muestra un mensaje de error o realiza alguna acción de manejo de error
+                      return;
+                    }
 
-                  // Realizar la inserción en la base de datos
-                  await _insertarClase(nombreClase, docenteId, fechaClaseId,
-                      horaInicio, horaFin, selectedIdAula);
-                },
-                child: Text('Guardar Clase'),
-              ),
+                    // Realizar la inserción en la base de datos
+                    await _insertarClase(nombreClase, docenteId, fechaClaseId,
+                        horaInicio, horaFin, selectedIdAula);
+                  },
+                  child: Text('Guardar Clase'),
+                  style: ElevatedButton.styleFrom(
+                    primary: Color.fromRGBO(40, 140, 1, 1.0),
+                  ),
+                ),
+              )
             ],
           ),
         ),
@@ -365,11 +389,9 @@ class _CrearPageState extends State<CrearPage> {
     }
 
     try {
-      // Formatear las horas de inicio y fin
       final horaInicioStr = '${horaInicio.hour}:${horaInicio.minute}';
       final horaFinStr = '${horaFin.hour}:${horaFin.minute}';
 
-      // Consulta para verificar clases que choquen con la nueva clase
       final results = await connection.query(
         'SELECT nombre, programa FROM clases WHERE idSalones = ? AND idfecha_clase = ? AND (' +
             '((hora_inicial <= ? AND hora_final >= ?) OR (hora_inicial >= ? AND hora_final <= ?))' +
@@ -385,11 +407,11 @@ class _CrearPageState extends State<CrearPage> {
       );
 
       if (results.isNotEmpty) {
-        // Si hay clases que chocan, mostrar un mensaje de error
         final nombreClaseExistente = results.first['nombre'];
         final programaClaseExistente = results.first['programa'];
 
-        print('Clase choca con $nombreClaseExistente de $programaClaseExistente');
+        print(
+            'Clase choca con $nombreClaseExistente de $programaClaseExistente');
 
         showDialog(
           context: context,
@@ -402,7 +424,7 @@ class _CrearPageState extends State<CrearPage> {
               actions: <Widget>[
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop(); // Cierra el cuadro de diálogo de error
+                    Navigator.of(context).pop();
                   },
                   child: Text('Aceptar'),
                 ),
@@ -411,7 +433,6 @@ class _CrearPageState extends State<CrearPage> {
           },
         );
       } else {
-        // Si no hay clases que choquen, realizar la inserción
         print(
             'INSERT INTO clases ($nombreClase, $docenteId, $aulaId, $semestre, $fechaClaseId, $horaInicioStr, $horaFinStr, $directorType, $jornada) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
         await connection.query(
@@ -425,12 +446,10 @@ class _CrearPageState extends State<CrearPage> {
             horaInicioStr,
             horaFinStr,
             directorType,
-            jornada
+            jornada,
           ],
         );
 
-        // Mostrar un mensaje de éxito o realizar alguna acción después de la inserción
-        // Por ejemplo, puedes mostrar un diálogo de éxito o navegar a otra pantalla
         showDialog(
           context: context,
           builder: (context) {
@@ -452,12 +471,9 @@ class _CrearPageState extends State<CrearPage> {
         );
       }
     } catch (e) {
-      // Manejo de error en caso de que la inserción falle
       print('Error al insertar clase: $e');
-      // Puedes mostrar un mensaje de error o realizar alguna otra acción de manejo de error
     }
   }
-
 
   Future<String> obtenerSemestreType() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -485,8 +501,6 @@ class _CrearPageState extends State<CrearPage> {
     return prefs.getString('directorType') ?? '';
   }
 
-  // Las funciones fetchFechasClase y getConnection siguen siendo similares
-  // ...
   @override
   void dispose() {
     horaInicioController.dispose();

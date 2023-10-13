@@ -293,6 +293,7 @@ class _CalendarState extends State<Calendar> {
             MaterialPageRoute(builder: (context) => CrearPage()),
           );
         },
+        backgroundColor: Color.fromRGBO(40, 140, 1, 1.0),
         child: const Icon(Icons.add),
       ),
       body: content(),
