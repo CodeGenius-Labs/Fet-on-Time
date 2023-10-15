@@ -35,42 +35,59 @@ class ListaDeAulasWidget extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Lista de Aulas'),
-        backgroundColor:
-            Color.fromARGB(255, 40, 140, 1), // Color de fondo verde
+        backgroundColor: Color.fromARGB(255, 40, 140, 1), // Color de fondo verde
       ),
       body: ListView.builder(
-        itemCount: aulas.length,
+        itemCount: (aulas.length / 2).ceil(), // Redondea hacia arriba
         itemBuilder: (BuildContext context, int index) {
-          final aula = aulas[index];
+          final firstAulaIndex = index * 2;
+          final secondAulaIndex = (index * 2) + 1;
 
-          final elementosWidget = aula.elementos.entries
-              .map((entry) => Text("${entry.key}: ${entry.value}"))
-              .toList();
-
-          return Card(
-            child: ListTile(
-              title: Text(aula.nombre),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: elementosWidget,
+          return Row(
+            children: <Widget>[
+              Expanded(
+                child: Card(
+                  child: buildAulaCard(context, aulas[firstAulaIndex]),
+                ),
               ),
-              onTap: () {
-                // Cuando se toca un aula, regresa la ID al screen anterior
-                final snackBar = SnackBar(
-                  content:
-                      Text('Aula seleccionada Correctamente ${aula.nombre}'),
-                );
-
-                ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                Navigator.of(context).pop(aula.id);
-              },
-            ),
+              SizedBox(width: 8.0), // Espacio entre las aulas
+              if (secondAulaIndex < aulas.length)
+                Expanded(
+                  child: Card(
+                    child: buildAulaCard(context, aulas[secondAulaIndex]),
+                  ),
+                ),
+            ],
           );
         },
       ),
     );
   }
+
+  Widget buildAulaCard(BuildContext context, Aula aula) {
+    final elementosWidget = aula.elementos.entries
+        .map((entry) => Text("${entry.key}: ${entry.value}"))
+        .toList();
+
+    return ListTile(
+      title: Text(aula.nombre),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: elementosWidget,
+      ),
+      onTap: () {
+        // Cuando se toca un aula, regresa la ID al screen anterior
+        final snackBar = SnackBar(
+          content: Text('Aula seleccionada Correctamente ${aula.nombre}'),
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+        Navigator.of(context).pop(aula.id);
+      },
+    );
+  }
 }
+
 
 class _CrearPageState extends State<CrearPage> {
   MySqlConnection? _connection;

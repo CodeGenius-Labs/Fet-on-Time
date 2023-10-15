@@ -101,25 +101,27 @@ class _EditarPageState extends State<EditarPage> {
         backgroundColor: Color.fromARGB(255, 40, 140, 1),
         title: Text('Editar Clase'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(
-                vertical: 8.0,
-              ),
-              child: TextField(
-                controller: nombreController,
-                decoration: InputDecoration(
-                  labelText: 'Nombre de la Clase',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                        10.0), // Personaliza el radio del borde
+  body: SingleChildScrollView(
+    child: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: 8.0,
+            ),
+            child: TextField(
+              controller: nombreController,
+              decoration: InputDecoration(
+                labelText: 'Nombre de la Clase',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    10.0, // Personaliza el radio del borde
                   ),
                 ),
               ),
             ),
+          ),
             Padding(
               padding: EdgeInsets.symmetric(
                 vertical: 8.0,
@@ -272,7 +274,8 @@ class _EditarPageState extends State<EditarPage> {
             ),
           ],
         ),
-      ),
+      )
+  ),
     );
   }
 
