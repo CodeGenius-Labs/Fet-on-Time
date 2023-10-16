@@ -12,14 +12,15 @@ class home extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const CircularProgressIndicator();
         } else if (snapshot.hasError) {
-          return const Center(child: Text('Error al obtener el tipo de director'));
+          return const Center(
+              child: Text('Error al obtener el tipo de director'));
         } else {
           final directorType = snapshot.data ?? '';
 
           return Scaffold(
             appBar: AppBar(
-              backgroundColor: Color.fromARGB(255, 40, 140, 1), // Color de fondo gris
-              toolbarHeight: 120, // Ajusta esta altura a tu preferencia
+              backgroundColor: Color.fromARGB(255, 40, 140, 1),
+              toolbarHeight: 120,
               title: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -37,110 +38,58 @@ class home extends StatelessWidget {
                   ),
                 ],
               ),
-              centerTitle: true, // Centra el título en la barra
+              centerTitle: true,
             ),
             body: Container(
-              color: const Color.fromARGB(120,40,140,1), // Color de fondo gris para la parte blanca
+              color: const Color.fromARGB(120, 40, 140, 1),
               child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 19.0),
-                      child: GridView.builder(
-                        shrinkWrap: true,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 20.0,
-                          mainAxisSpacing: 20.0,
-                        ),
-                        itemCount: 11,
-                        itemBuilder: (context, index) {
-                          int semesterNumber = index + 1;
-                          String semesterText = 'SEMESTRE\n$semesterNumber';
-                          if (semesterNumber == 10) {
-                            return Visibility(
-                              visible: false,
-                              child: Container(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: () async {
-                                    Navigator.pushNamed(context, 'calendar');
-                                    SharedPreferences prefs = await SharedPreferences.getInstance();
-                                    prefs.setString('semestreType', '$semesterNumber');
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green, // Color de fondo verde
-                                  ),
-                                  child: Text(
-                                    semesterText,
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
-                                ),
-                              ),
-                            );
-                          } else if (semesterNumber == 11) {
-                            String semesterText = 'SEMESTRE\n10';
-                            return ElevatedButton(
-                              onPressed: () async {
-                                Navigator.pushNamed(context, 'calendar');
-                                SharedPreferences prefs = await SharedPreferences.getInstance();
-                                prefs.setString('semestreType', '10');
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green, // Color de fondo verde
-                                padding: EdgeInsets.all(0),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  semesterText,
-                                  style: const TextStyle(fontSize: 17),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            );
-                          }
+                child: SingleChildScrollView(
+                  // Utiliza SingleChildScrollView para agregar la barra de desplazamiento vertical
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(10, (index) {
+                      int semesterNumber = index + 1;
+                      String semesterText = 'SEMESTRE $semesterNumber';
 
-                          return ElevatedButton(
-                            onPressed: () async {
-                              Navigator.pushNamed(context, 'calendar');
-                              SharedPreferences prefs = await SharedPreferences.getInstance();
-                              prefs.setString('semestreType', '$semesterNumber');
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green, // Color de fondo verde
-                              padding: EdgeInsets.all(0),
+                      return Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 20), // Añade un margen horizontal
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            Navigator.pushNamed(context, 'calendar');
+                            SharedPreferences prefs =
+                                await SharedPreferences.getInstance();
+                            prefs.setString('semestreType', '$semesterNumber');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            primary: Colors
+                                .green, // Cambia el color de fondo del botón
+                            padding: EdgeInsets.symmetric(
+                                vertical: 20,
+                                horizontal:
+                                    30), // Aumenta el espacio en el botón
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                  10.0), // Redondea los bordes del botón
                             ),
-                            child: Center(
-                              child: Text(
-                                semesterText,
-                                style: const TextStyle(fontSize: 17),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 40), // Espacio entre los botones y el botón "Cerrar Sesión"
-                    ElevatedButton(
-                      onPressed: () async {
-                        SharedPreferences prefs =
-                            await SharedPreferences.getInstance();
-                        prefs.setBool('isLoggedIn', false);
-                        prefs.setString('status', 'login');
-                        Navigator.pushReplacementNamed(context, 'loadinglogin');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green, // Color de fondo verde
-                        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 10), // Espacio vertical del botón
-                      ),
-                      child: const Text(
-                        'Cerrar Sesión',
-                        style: TextStyle(fontSize: 22), // Tamaño de fuente aumentado
-                      ),
-                    ),
-                  ],
+                            textStyle: const TextStyle(
+                                fontSize: 18,
+                                fontWeight:
+                                    FontWeight.bold), // Estiliza el texto
+                          ),
+                          child: Text(
+                            semesterText,
+                            style: TextStyle(
+                                fontSize: 18,
+                                color: Colors
+                                    .white), // Estiliza el texto del botón
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
                 ),
               ),
             ),
@@ -151,17 +100,12 @@ class home extends StatelessWidget {
   }
 
   double _calculateTitleFontSize(BuildContext context) {
-    // Obtener el ancho de la pantalla utilizando MediaQuery
     final double screenWidth = MediaQuery.of(context).size.width;
-
-    // Definir el tamaño de fuente base
     double baseFontSize = 17;
 
-    // Definir un tamaño de fuente menor para pantallas pequeñas
     if (screenWidth < 365) {
       baseFontSize = 16;
-    }
-    else if (screenWidth < 320) {
+    } else if (screenWidth < 320) {
       baseFontSize = 14;
     }
 

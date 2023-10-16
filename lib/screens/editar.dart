@@ -98,129 +98,184 @@ class _EditarPageState extends State<EditarPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Color.fromARGB(255, 40, 140, 1),
         title: Text('Editar Clase'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
+  body: SingleChildScrollView(
+    child: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: 8.0,
+            ),
+            child: TextField(
               controller: nombreController,
-              decoration: InputDecoration(labelText: 'Nombre Clase'),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Hora Inicial: ${horaInicial.format(context)}'),
-                ElevatedButton(
-                  onPressed: () => _selectHoraInicial(context),
-                  child: Text('Seleccionar Hora'),
+              decoration: InputDecoration(
+                labelText: 'Nombre de la Clase',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    10.0, // Personaliza el radio del borde
+                  ),
                 ),
-              ],
+              ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Hora Final: ${horaFinal.format(context)}'),
-                ElevatedButton(
-                  onPressed: () => _selectHoraFinal(context),
-                  child: Text('Seleccionar Hora'),
+          ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: 8.0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Hora Inicial: ${horaInicial.format(context)}'),
+                  ElevatedButton(
+                    onPressed: () => _selectHoraInicial(context),
+                    child: Text('Seleccionar Hora'),
+                    style: ElevatedButton.styleFrom(
+                      primary: Color.fromRGBO(40, 140, 1, 1.0),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: 8.0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Hora Final: ${horaFinal.format(context)}'),
+                  ElevatedButton(
+                    onPressed: () => _selectHoraFinal(context),
+                    child: Text('Seleccionar Hora'),
+                    style: ElevatedButton.styleFrom(
+                      primary: Color.fromRGBO(40, 140, 1, 1.0),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: 8.0,
+              ),
+              child: DropdownButton<Docente>(
+                value: selectedDocenteId == -1
+                    ? null
+                    : docentesDropdown
+                        .firstWhere(
+                            (item) => item.value!.id == selectedDocenteId)
+                        .value,
+                items: docentesDropdown,
+                onChanged: (docente) {
+                  setState(() {
+                    selectedDocenteId = docente!.id;
+                  });
+                },
+                hint: Text('Seleccione un Docente'),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: 8.0,
+              ),
+              child: DropdownButton<Salon>(
+                value: selectedSalonId == -1
+                    ? null
+                    : salonesDropdown
+                        .firstWhere((item) => item.value!.id == selectedSalonId)
+                        .value,
+                items: salonesDropdown,
+                onChanged: (salon) {
+                  setState(() {
+                    selectedSalonId = salon!.id;
+                  });
+                },
+                hint: Text('Seleccione un Salón'),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: 8.0,
+              ),
+              child: DropdownButton<FechaClase>(
+                value: selectedFechaClaseId == -1
+                    ? null
+                    : fechaClaseDropdown
+                        .firstWhere(
+                            (item) => item.value!.id == selectedFechaClaseId)
+                        .value,
+                items: fechaClaseDropdown,
+                onChanged: (fechaClase) {
+                  setState(() {
+                    selectedFechaClaseId = fechaClase!.id;
+                  });
+                },
+                hint: Text('Seleccione una Fecha de Clase'),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: 8.0,
+              ),
+              child: ElevatedButton(
+                onPressed: () async {
+                  // Obtener los valores seleccionados de los desplegables
+                  final nuevoIdDocentes = selectedDocenteId;
+                  final nuevoIdSalones = selectedSalonId;
+                  final nuevoIdFechaClase = selectedFechaClaseId;
+
+                  // Obtener los otros valores
+                  final nuevoNombre = nombreController.text;
+                  final nuevaHoraInicial = formatTimeOfDay(horaInicial);
+                  final nuevaHoraFinal = formatTimeOfDay(horaFinal);
+
+                  try {
+                    // Actualizar la clase en la base de datos usando las IDs seleccionadas
+                    print(
+                        'UPDATE clases SET idDocentes = $nuevoIdDocentes, idSalones = $nuevoIdSalones, idfecha_clase = $nuevoIdFechaClase, nombre = $nuevoNombre, hora_inicial = $nuevaHoraInicial, hora_final = $nuevaHoraFinal WHERE nombre = $nombre_viejo AND jornada = $jornada');
+                    await _connection!.query(
+                      'UPDATE clases SET idDocentes = ?, idSalones = ?, idfecha_clase = ?, nombre = ?, hora_inicial = ?, hora_final = ? WHERE nombre = ? AND jornada = ?',
+                      [
+                        nuevoIdDocentes,
+                        nuevoIdSalones,
+                        nuevoIdFechaClase,
+                        nuevoNombre,
+                        nuevaHoraInicial,
+                        nuevaHoraFinal,
+                        nombre_viejo,
+                        jornada
+                      ],
+                    );
+
+                    // Muestra un SnackBar para indicar que la clase se actualizó correctamente
+                    final snackBar = SnackBar(
+                      content: Text('La clase se actualizó correctamente.'),
+                    );
+
+                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+                    // Cierra la pantalla de edición después de actualizar los valores
+                    Navigator.of(context).pop();
+                  } catch (e) {
+                    // Manejar cualquier error que pueda ocurrir durante la actualización
+                    print('Error al actualizar la clase: $e');
+                    // Puedes mostrar un mensaje de error al usuario si es necesario
+                  }
+                },
+                child: Text('Guardar Cambios'),
+                style: ElevatedButton.styleFrom(
+                  primary: Color.fromRGBO(40, 140, 1, 1.0),
                 ),
-              ],
-            ),
-            DropdownButton<Docente>(
-              value: selectedDocenteId == -1
-                  ? null
-                  : docentesDropdown
-                      .firstWhere((item) => item.value!.id == selectedDocenteId)
-                      .value,
-              items: docentesDropdown,
-              onChanged: (docente) {
-                setState(() {
-                  selectedDocenteId = docente!.id;
-                });
-              },
-              hint: Text('Seleccione un Docente'),
-            ),
-            DropdownButton<Salon>(
-              value: selectedSalonId == -1
-                  ? null
-                  : salonesDropdown
-                      .firstWhere((item) => item.value!.id == selectedSalonId)
-                      .value,
-              items: salonesDropdown,
-              onChanged: (salon) {
-                setState(() {
-                  selectedSalonId = salon!.id;
-                });
-              },
-              hint: Text('Seleccione un Salón'),
-            ),
-            DropdownButton<FechaClase>(
-              value: selectedFechaClaseId == -1
-                  ? null
-                  : fechaClaseDropdown
-                      .firstWhere(
-                          (item) => item.value!.id == selectedFechaClaseId)
-                      .value,
-              items: fechaClaseDropdown,
-              onChanged: (fechaClase) {
-                setState(() {
-                  selectedFechaClaseId = fechaClase!.id;
-                });
-              },
-              hint: Text('Seleccione una Fecha de Clase'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                // Obtener los valores seleccionados de los desplegables
-                final nuevoIdDocentes = selectedDocenteId;
-                final nuevoIdSalones = selectedSalonId;
-                final nuevoIdFechaClase = selectedFechaClaseId;
-
-                // Obtener los otros valores
-                final nuevoNombre = nombreController.text;
-                final nuevaHoraInicial = formatTimeOfDay(horaInicial);
-                final nuevaHoraFinal = formatTimeOfDay(horaFinal);
-
-                try {
-                  // Actualizar la clase en la base de datos usando las IDs seleccionadas
-                  print(
-                      'UPDATE clases SET idDocentes = $nuevoIdDocentes, idSalones = $nuevoIdSalones, idfecha_clase = $nuevoIdFechaClase, nombre = $nuevoNombre, hora_inicial = $nuevaHoraInicial, hora_final = $nuevaHoraFinal WHERE nombre = $nombre_viejo AND jornada = $jornada');
-                  await _connection!.query(
-                    'UPDATE clases SET idDocentes = ?, idSalones = ?, idfecha_clase = ?, nombre = ?, hora_inicial = ?, hora_final = ? WHERE nombre = ? AND jornada = ?',
-                    [
-                      nuevoIdDocentes,
-                      nuevoIdSalones,
-                      nuevoIdFechaClase,
-                      nuevoNombre,
-                      nuevaHoraInicial,
-                      nuevaHoraFinal,
-                      nombre_viejo,
-                      jornada
-                    ],
-                  );
-
-                  // Muestra un SnackBar para indicar que la clase se actualizó correctamente
-                  final snackBar = SnackBar(
-                    content: Text('La clase se actualizó correctamente.'),
-                  );
-
-                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
-                  // Cierra la pantalla de edición después de actualizar los valores
-                  Navigator.of(context).pop();
-                } catch (e) {
-                  // Manejar cualquier error que pueda ocurrir durante la actualización
-                  print('Error al actualizar la clase: $e');
-                  // Puedes mostrar un mensaje de error al usuario si es necesario
-                }
-              },
-              child: Text('Guardar Cambios'),
+              ),
             ),
           ],
         ),
-      ),
+      )
+  ),
     );
   }
 
