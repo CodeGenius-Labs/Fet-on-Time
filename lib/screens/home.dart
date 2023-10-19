@@ -44,56 +44,77 @@ class home extends StatelessWidget {
               color: const Color.fromARGB(120, 40, 140, 1),
               child: Center(
                 child: SingleChildScrollView(
-                  // Utiliza SingleChildScrollView para agregar la barra de desplazamiento vertical
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(10, (index) {
-                      int semesterNumber = index + 1;
-                      String semesterText = 'SEMESTRE $semesterNumber';
+                    children: [
+                      ...List.generate(10, (index) {
+                        int semesterNumber = index + 1;
+                        String semesterText = 'SEMESTRE $semesterNumber';
 
-                      return Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.symmetric(
+                        return Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.symmetric(
                             vertical: 12,
-                            horizontal: 20), // Añade un margen horizontal
+                            horizontal: 20,
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              Navigator.pushNamed(context, 'calendar');
+                              SharedPreferences prefs =
+                              await SharedPreferences.getInstance();
+                              prefs.setString('semestreType', '$semesterNumber');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              primary: Colors.green,
+                              padding: EdgeInsets.symmetric(
+                                vertical: 20,
+                                horizontal: 30,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.0),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            child: Text(
+                              semesterText,
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                      Container(
+                        margin: EdgeInsets.only(top: 12, bottom: 12), // Margen en la parte superior e inferior
                         child: ElevatedButton(
                           onPressed: () async {
-                            Navigator.pushNamed(context, 'calendar');
-                            SharedPreferences prefs =
-                                await SharedPreferences.getInstance();
-                            prefs.setString('semestreType', '$semesterNumber');
+                            SharedPreferences prefs = await SharedPreferences.getInstance();
+                            prefs.setBool('isLoggedIn', false);
+                            prefs.setString('status', 'login');
+                            Navigator.pushReplacementNamed(context, 'loadinglogin');
                           },
                           style: ElevatedButton.styleFrom(
-                            primary: Colors
-                                .green, // Cambia el color de fondo del botón
-                            padding: EdgeInsets.symmetric(
-                                vertical: 20,
-                                horizontal:
-                                    30), // Aumenta el espacio en el botón
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                  10.0), // Redondea los bordes del botón
-                            ),
-                            textStyle: const TextStyle(
-                                fontSize: 18,
-                                fontWeight:
-                                    FontWeight.bold), // Estiliza el texto
+                            primary: Colors.green,
+                            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 10),
                           ),
-                          child: Text(
-                            semesterText,
-                            style: TextStyle(
-                                fontSize: 18,
-                                color: Colors
-                                    .white), // Estiliza el texto del botón
+                          child: const Text(
+                            'Cerrar Sesión',
+                            style: TextStyle(fontSize: 22),
                           ),
                         ),
-                      );
-                    }),
+                      )
+
+                    ],
                   ),
                 ),
               ),
             ),
           );
+
         }
       },
     );
