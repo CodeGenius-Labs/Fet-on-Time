@@ -1,12 +1,9 @@
-import 'package:fetontime/screens/editar.dart';
 import 'package:fetontime/screens/eliminar.dart';
 import 'package:fetontime/screens/crear.dart';
 import 'package:fetontime/screens/home.dart';
 import 'package:fetontime/screens/login.dart';
 import 'package:fetontime/screens/calendar.dart';
 // ignore: unused_import
-import 'package:fetontime/screens/eliminar.dart';
-import 'package:fetontime/screens/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -30,7 +27,6 @@ class MyApp extends StatelessWidget {
         'loading': (_) => LoadingScreen(), // Agrega esta línea
         'loadinglogin': (_) => LoadingScreen(),
         'calendar': (_) => Calendar(),
-        'editar': (_) => EditarPage(),
         'eliminar': (_) => EliminarPage(),
         'crear': (_) => CrearPage(),
       },

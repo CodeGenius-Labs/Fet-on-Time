@@ -15,6 +15,7 @@ class Calendar extends StatefulWidget {
 
 class _CalendarState extends State<Calendar> {
   String semestre = '';
+  int idClase = 0;
   String directorType = ''; // Declaración de la variable directorType
   DateTime today = DateTime.now();
   DateTime? _selectedDay;
@@ -77,10 +78,11 @@ class _CalendarState extends State<Calendar> {
       String dayOfWeek, String directorType) async {
     try {
       final results = await _connection!.query(
-        'SELECT c.nombre AS nombre_clase, c.jornada AS jornada, d.Nombre AS nombre_docente, '
+        'SELECT c.idClases AS id_clase, m.nombre AS nombre_clase, c.jornada AS jornada, d.Nombre AS nombre_docente, '
         'CONCAT(s.bloque, "-", s.aula) AS ubicacion_salon,'
         'CONCAT(c.hora_inicial, "-", c.hora_final) AS hora_clase FROM clases c '
         'INNER JOIN docentes d ON c.idDocentes = d.idDocentes '
+        'INNER JOIN materias m ON c.idmaterias = m.id '
         'INNER JOIN salones s ON c.idSalones = s.idSalones '
         'INNER JOIN fecha_clase fc ON c.idfecha_clase = fc.idfecha_clase '
         'WHERE fc.dias = ? AND c.programa = ? AND c.semestre = ?',
@@ -96,6 +98,9 @@ class _CalendarState extends State<Calendar> {
           row['ubicacion_salon'],
           row['hora_clase'],
         ));
+        // Aquí asigna el ID de la clase a la variable idClase
+        print(row['id_clase']);
+        idClase = row['id_clase'];
       }
 
       return events;
@@ -106,7 +111,6 @@ class _CalendarState extends State<Calendar> {
   }
 
   Map<DateTime, List<Event>> events = {};
-  TextEditingController _eventController = TextEditingController();
 
   void _onDaySelected(DateTime day, DateTime focusedDay) {
     setState(() {
@@ -224,7 +228,9 @@ class _CalendarState extends State<Calendar> {
                     Navigator.of(context).pop();
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => EditarPage()),
+                      MaterialPageRoute(builder: (context) => EditarPage(
+                        idClase: idClase,
+                      )),
                     );
                     SharedPreferences prefs =
                         await SharedPreferences.getInstance();
@@ -232,7 +238,7 @@ class _CalendarState extends State<Calendar> {
                     prefs.setString('jornada', '${event.jornada}');
                   },
                   style: ElevatedButton.styleFrom(
-                    primary: Color.fromRGBO(40, 140, 1, 1),
+                    backgroundColor: Color.fromRGBO(40, 140, 1, 1),
                   ),
                   child: Text('Editar'),
                 ),
@@ -249,7 +255,7 @@ class _CalendarState extends State<Calendar> {
                     prefs.setString('jornada', '${event.jornada}');
                   },
                   style: ElevatedButton.styleFrom(
-                    primary: Color.fromRGBO(40, 140, 1, 1),
+                    backgroundColor: Color.fromRGBO(40, 140, 1, 1),
                   ),
                   child: Text("Eliminar"),
                 ),
@@ -258,7 +264,7 @@ class _CalendarState extends State<Calendar> {
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    primary: Color.fromRGBO(40, 140, 1, 1),
+                    backgroundColor: Color.fromRGBO(40, 140, 1, 1),
                   ),
                   child: Text("Cerrar"),
                 ),

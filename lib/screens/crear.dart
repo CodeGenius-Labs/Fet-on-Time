@@ -138,7 +138,6 @@ class _CrearPageState extends State<CrearPage> {
     //final salones = await _fetchSalones(); // Consultar la lista de salones
     final fechasClase =
         await _fetchFechasClase(); // Consultar la lista de fechas de clase
-    // Consulta a la base de datos para obtener la lista de aulas
     final aulas = await _fetchAulas();
 
     setState(() {
@@ -256,7 +255,7 @@ class _CrearPageState extends State<CrearPage> {
                 onPressed: _mostrarListaDeAulas,
                 child: Text('Seleccionar Salón'),
                 style: ElevatedButton.styleFrom(
-                  primary: Color.fromRGBO(40, 140, 1, 1.0),
+                  backgroundColor: Color.fromRGBO(40, 140, 1, 1.0),
                 ),
               ),
               DropdownButton<FechaClase>(
@@ -379,7 +378,7 @@ class _CrearPageState extends State<CrearPage> {
                   },
                   child: Text('Guardar Clase'),
                   style: ElevatedButton.styleFrom(
-                    primary: Color.fromRGBO(40, 140, 1, 1.0),
+                    backgroundColor: Color.fromRGBO(40, 140, 1, 1.0),
                   ),
                 ),
               )
