@@ -4,8 +4,6 @@ import 'package:mysql1/mysql1.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class EliminarPage extends StatefulWidget {
-  // Debes pasar los parámetros necesarios, como nombre_viejo y jornada, al constructor.
-
   @override
   _EliminarPageState createState() => _EliminarPageState();
 }
@@ -40,6 +38,7 @@ class _EliminarPageState extends State<EliminarPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Eliminar Clase'),
+        backgroundColor: Color.fromARGB(255, 40, 140, 1), // Cambia el color del AppBar
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -75,6 +74,9 @@ class _EliminarPageState extends State<EliminarPage> {
                   // Puedes mostrar un mensaje de error al usuario si es necesario
                 }
               },
+              style: ElevatedButton.styleFrom(
+                primary: Color.fromARGB(255, 40, 140, 1), // Cambia el color del botón
+              ),
               child: Text('Eliminar Clase'),
             ),
           ],
