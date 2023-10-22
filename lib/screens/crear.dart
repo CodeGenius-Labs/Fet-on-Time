@@ -1,116 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import '../base_conection.dart';
-import 'package:mysql1/mysql1.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mysql1/mysql1.dart';
+import '../base_conection.dart';
+import 'package:intl/intl.dart';
 
 class CrearPage extends StatefulWidget {
   @override
   _CrearPageState createState() => _CrearPageState();
 }
 
-class Aula {
-  final int id;
-  final String nombre;
-  final Map<String, int> elementos;
-
-  Aula({
-    required this.id,
-    required this.nombre,
-    required this.elementos,
-  });
-}
-
-List<Aula> listaDeAulas = [];
-
-List<String> opcionesJornada = ['diurna', 'nocturna'];
-
-class ListaDeAulasWidget extends StatelessWidget {
-  final List<Aula> aulas;
-
-  ListaDeAulasWidget({required this.aulas});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Lista de Aulas'),
-        backgroundColor: Color.fromARGB(255, 40, 140, 1), // Color de fondo verde
-      ),
-      body: ListView.builder(
-        itemCount: (aulas.length / 2).ceil(), // Redondea hacia arriba
-        itemBuilder: (BuildContext context, int index) {
-          final firstAulaIndex = index * 2;
-          final secondAulaIndex = (index * 2) + 1;
-
-          return Row(
-            children: <Widget>[
-              Expanded(
-                child: Card(
-                  child: buildAulaCard(context, aulas[firstAulaIndex]),
-                ),
-              ),
-              SizedBox(width: 8.0), // Espacio entre las aulas
-              if (secondAulaIndex < aulas.length)
-                Expanded(
-                  child: Card(
-                    child: buildAulaCard(context, aulas[secondAulaIndex]),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget buildAulaCard(BuildContext context, Aula aula) {
-    final elementosWidget = aula.elementos.entries
-        .map((entry) => Text("${entry.key}: ${entry.value}"))
-        .toList();
-
-    return ListTile(
-      title: Text(aula.nombre),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: elementosWidget,
-      ),
-      onTap: () {
-        // Cuando se toca un aula, regresa la ID al screen anterior
-        final snackBar = SnackBar(
-          content: Text('Aula seleccionada Correctamente ${aula.nombre}'),
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(snackBar);
-        Navigator.of(context).pop(aula.id);
-      },
-    );
-  }
-}
-
-
 class _CrearPageState extends State<CrearPage> {
   MySqlConnection? _connection;
-  String selectedDocente = "";
-  String selectedFechaClase = "";
-  String selectedSalon = "";
-  String semestre = '';
-  String jornada = 'diurna';
-  TextEditingController nombreClaseController = TextEditingController();
-
-  String directorType = '';
+  int estudiantes = 0;
+  String selectedJornada = 'diurna';
+  List<String> condiciones = [];
+  int selectedMateriasId = -1;
+  List<DropdownMenuItem<Materias>> materiasDropdown = [];
   int selectedDocenteId = -1;
-  int selectedSalonId = -1;
-  int selectedFechaClaseId = -1;
-  int selectedIdAula = 0;
   List<DropdownMenuItem<Docente>> docentesDropdown = [];
-  List<DropdownMenuItem<FechaClase>> fechaClaseDropdown = [];
-
-  TimeOfDay selectedHoraInicio = TimeOfDay.now();
-  TimeOfDay selectedHoraFin = TimeOfDay.now();
-
-  TextEditingController horaInicioController = TextEditingController();
-  TextEditingController horaFinController = TextEditingController();
+  List<String> jornadaOptions = ['diurna', 'nocturna']; // Opciones de jornada
+  List<String> customDiasJornadas = []; //listado donde guarda las condiciones de los docentes
+  List<Clase> horariosOcupadosList = []; // Cambia el tipo de la lista a Clase
 
   @override
   void initState() {
@@ -120,25 +30,22 @@ class _CrearPageState extends State<CrearPage> {
         _connection = connection;
       });
       loadDropdownOptions(); // Cargar opciones de desplegables al obtener la conexión
-    });
-    obtenerSemestreType().then((value) {
-      setState(() {
-        semestre = value;
-      });
-    });
-    _getDirectorType().then((value) {
-      setState(() {
-        directorType = value;
+      getHorariosOcupados().then((horariosOcupados) {
+        // Aquí puedes usar los horarios ocupados como sea necesario
+        setState(() {
+          // Actualiza el estado con los horarios ocupados
+          // Por ejemplo, puedes almacenarlos en una variable de estado.
+          horariosOcupadosList = horariosOcupados;
+          printHorariosOcupados(horariosOcupadosList);
+        });
       });
     });
   }
 
+  // Función para cargar las opciones de los desplegables
   void loadDropdownOptions() async {
     final docentes = await _fetchDocentes(); // Consultar la lista de docentes
-    //final salones = await _fetchSalones(); // Consultar la lista de salones
-    final fechasClase =
-        await _fetchFechasClase(); // Consultar la lista de fechas de clase
-    final aulas = await _fetchAulas();
+    final materias = await _fetchMaterias(); // Consultar la lista de docentes
 
     setState(() {
       // Construir elementos de desplegable para docentes
@@ -149,94 +56,124 @@ class _CrearPageState extends State<CrearPage> {
               ))
           .toList();
 
-      // Construir elementos de desplegable para fechas de clase
-      fechaClaseDropdown = fechasClase
-          .map((fechaClase) => DropdownMenuItem<FechaClase>(
-                value: fechaClase,
-                child: Text(fechaClase.fecha
-                    .toString()), // Ajusta esto según la estructura de tus fechas
+      materiasDropdown = materias
+          .map((materias) => DropdownMenuItem<Materias>(
+                value: materias,
+                child: Text(materias.nombre),
               ))
           .toList();
-      // Asigna la lista de aulas obtenida de la base de datos
-      listaDeAulas = aulas;
     });
   }
+  void _openAgregarDiasJornadasDialog(BuildContext context) {
+    String nuevoDia = 'lunes'; // Variable para el día ingresado
+    String nuevaJornada = 'diurna'; // Variable para la jornada ingresada
 
-  // Define una función para consultar las aulas desde la base de datos
-  Future<List<Aula>> _fetchAulas() async {
-    final results = await _connection!.query(
-        'SELECT CONCAT(bloque, " ", aula) AS nombre_completo, idSalones, pupitres, mesas, sillas, enchufes, ventiladores, aires, tv, videobeen FROM salones');
-
-    return results.map((row) {
-      final elementos = <String, int>{};
-      elementos['pupitres'] = row['pupitres'];
-      elementos['mesas'] = row['mesas'];
-      elementos['sillas'] = row['sillas'];
-      elementos['enchufes'] = row['enchufes'];
-      elementos['ventiladores'] = row['ventiladores'];
-      elementos['aires'] = row['aires'];
-      elementos['tv'] = row['tv'];
-      elementos['videobeen'] = row['videobeen'];
-
-      // Filtra elementos diferentes de 0
-      final filteredElementos = elementos.entries
-          .where((entry) => entry.value != 0)
-          .map((entry) => MapEntry(entry.key, entry.value))
-          .toList();
-
-      return Aula(
-        id: row['idSalones'],
-        nombre: row['nombre_completo'],
-        elementos: Map.fromEntries(filteredElementos),
-      );
-    }).toList();
-  }
-
-  void _mostrarListaDeAulas() async {
-    final selectedAulaId = await Navigator.of(context).push<int>(
-      MaterialPageRoute(
-        builder: (context) => ListaDeAulasWidget(aulas: listaDeAulas),
-      ),
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Agregar Días y Jornadas'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButton<String>(
+                value: nuevoDia,
+                items: [
+                  'Lunes',
+                  'Martes',
+                  'Miércoles',
+                  'Jueves',
+                  'Viernes',
+                  'Sábado',
+                  'Domingo',
+                ].map((dia) {
+                  return DropdownMenuItem<String>(
+                    value: dia,
+                    child: Text(dia),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    nuevoDia = value!;
+                  });
+                },
+                hint: Text('Selecciona un día'),
+              ),
+              DropdownButton<String>(
+                value: nuevaJornada,
+                items: jornadaOptions.map((jornada) {
+                  return DropdownMenuItem<String>(
+                    value: jornada,
+                    child: Text(jornada),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    nuevaJornada = value!;
+                  });
+                },
+                hint: Text('Selecciona una jornada'),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                if (nuevoDia.isNotEmpty && nuevaJornada.isNotEmpty) {
+                  // Verifica que los campos no estén vacíos
+                  setState(() {
+                    // Agregar los datos ingresados a la lista
+                    customDiasJornadas.add('$nuevoDia $nuevaJornada');
+                  });
+                  print(customDiasJornadas);
+                  Navigator.pop(context);
+                }
+              },
+              child: Text('Guardar'),
+            ),
+          ],
+        );
+      },
     );
-
-    if (selectedAulaId != null) {
-      // Hacer algo con la ID seleccionada, como almacenarla o mostrarla en pantalla
-      print("ID del aula seleccionada: $selectedAulaId");
-      selectedIdAula = selectedAulaId;
-      print("ID del aula: $selectedIdAula");
-    }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color.fromARGB(255, 40, 140, 1),
-        title: Text('Crear Clase', style: TextStyle(color: Colors.white)),
+        title: Text('Crear Clase'),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: <Widget>[
-              TextFormField(
-                controller: nombreClaseController,
-                decoration: InputDecoration(
-                  labelText: 'Nombre de la Clase',
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.green, width: 2.0),
-                    borderRadius: BorderRadius.circular(
-                        10.0), // Personaliza el radio del borde
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.green, width: 2.0),
-                    borderRadius: BorderRadius.circular(
-                        10.0), // Personaliza el radio del borde
-                  ),
-                  labelStyle: TextStyle(color: Colors.black),
-                ),
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: 8.0,
               ),
-              DropdownButton<Docente>(
+              child: DropdownButton<Materias>(
+                value: selectedMateriasId == -1
+                    ? null
+                    : materiasDropdown
+                        .firstWhere(
+                            (item) => item.value!.id == selectedMateriasId)
+                        .value,
+                items: materiasDropdown,
+                onChanged: (materia) {
+                  setState(() {
+                    selectedMateriasId = materia!.id;
+                  });
+                },
+                hint: Text('Seleccione una Materia'),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: 8.0,
+              ),
+              child: DropdownButton<Docente>(
                 value: selectedDocenteId == -1
                     ? null
                     : docentesDropdown
@@ -251,277 +188,297 @@ class _CrearPageState extends State<CrearPage> {
                 },
                 hint: Text('Seleccione un Docente'),
               ),
-              ElevatedButton(
-                onPressed: _mostrarListaDeAulas,
-                child: Text('Seleccionar Salón'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color.fromRGBO(40, 140, 1, 1.0),
-                ),
+            ),
+            TextField(
+              decoration: InputDecoration(labelText: 'Cantidad de estudiantes'),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                setState(() {
+                  estudiantes = int.parse(value);
+                });
+              },
+            ),
+
+            Padding(
+              padding: EdgeInsets.only(top: 8.0), // Espaciado solo en la parte superior
+              child: Text('Selecciona una jornada:'),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: 1.0,
               ),
-              DropdownButton<FechaClase>(
-                value: selectedFechaClaseId == -1
-                    ? null
-                    : fechaClaseDropdown
-                        .firstWhere(
-                            (item) => item.value!.id == selectedFechaClaseId)
-                        .value,
-                items: fechaClaseDropdown,
-                onChanged: (fechaClase) {
-                  setState(() {
-                    selectedFechaClaseId = fechaClase!.id;
-                  });
-                },
-                hint: Text('Seleccione una Fecha de Clase'),
-              ),
-              ListTile(
-                title: Text('Hora de Inicio'),
-                subtitle: Text(
-                  DateFormat.jm().format(
-                    DateTime(
-                      0,
-                      1,
-                      1,
-                      selectedHoraInicio.hour,
-                      selectedHoraInicio.minute,
-                    ),
-                  ),
-                ),
-                onTap: () async {
-                  final selectedTime = await showTimePicker(
-                    context: context,
-                    initialTime: selectedHoraInicio,
-                  );
-                  if (selectedTime != null) {
-                    setState(() {
-                      selectedHoraInicio = selectedTime;
-                      horaInicioController.text = DateFormat.Hms().format(
-                        DateTime(
-                          0,
-                          1,
-                          1,
-                          selectedHoraInicio.hour,
-                          selectedHoraInicio.minute,
-                        ),
-                      );
-                    });
-                  }
-                },
-              ),
-              ListTile(
-                title: Text('Hora de Fin'),
-                subtitle: Text(
-                  DateFormat.jm().format(
-                    DateTime(
-                      0,
-                      1,
-                      1,
-                      selectedHoraFin.hour,
-                      selectedHoraFin.minute,
-                    ),
-                  ),
-                ),
-                onTap: () async {
-                  final selectedTime = await showTimePicker(
-                    context: context,
-                    initialTime: selectedHoraFin,
-                  );
-                  if (selectedTime != null) {
-                    setState(() {
-                      selectedHoraFin = selectedTime;
-                      horaFinController.text = DateFormat.Hms().format(
-                        DateTime(
-                          0,
-                          1,
-                          1,
-                          selectedHoraFin.hour,
-                          selectedHoraFin.minute,
-                        ),
-                      );
-                    });
-                  }
-                },
-              ),
-              DropdownButton<String>(
-                value: jornada,
-                items: opcionesJornada.map((String opcion) {
+              child: DropdownButton<String>(
+                value: selectedJornada,
+                items: jornadaOptions.map((jornada) {
                   return DropdownMenuItem<String>(
-                    value: opcion,
-                    child: Text(opcion),
+                    value: jornada,
+                    child: Text(jornada),
                   );
                 }).toList(),
-                onChanged: (String? newValue) {
+                onChanged: (jornada) {
                   setState(() {
-                    jornada = newValue ?? '';
+                    selectedJornada = jornada!;
                   });
                 },
               ),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: ElevatedButton(
-                  onPressed: () async {
-                    // Obtener los valores de los campos y desplegables
-                    final nombreClase = nombreClaseController.text;
-                    final docenteId = selectedDocenteId;
-                    final fechaClaseId = selectedFechaClaseId;
-                    final horaInicio = selectedHoraInicio;
-                    final horaFin = selectedHoraFin;
+            ),
+            Text('Condiciones de tiempo:'),
+            ElevatedButton(
+              onPressed: () {
+                _openAgregarDiasJornadasDialog(context); // Llama a la función para abrir el diálogo
+              },
+              child: Text('Condiciones Docentes'),
+            ),
 
-                    // Verificar que se haya seleccionado un aula
-                    if (selectedIdAula == 0) {
-                      // Muestra un mensaje de error o realiza alguna acción de manejo de error
-                      return;
-                    }
-
-                    // Realizar la inserción en la base de datos
-                    await _insertarClase(nombreClase, docenteId, fechaClaseId,
-                        horaInicio, horaFin, selectedIdAula);
-                  },
-                  child: Text('Guardar Clase'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color.fromRGBO(40, 140, 1, 1.0),
-                  ),
-                ),
-              )
-            ],
-          ),
+            // Agrega más CheckboxListTile para otras condiciones de tiempo
+            SizedBox(height: 16.0),
+            ElevatedButton(
+              onPressed: () {
+                _guardarClase();
+              },
+              child: Text('Guardar Clase'),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // Función para insertar la clase en la base de datos
-  Future<void> _insertarClase(
-      String nombreClase,
-      int docenteId,
-      int fechaClaseId,
-      TimeOfDay horaInicio,
-      TimeOfDay horaFin,
-      int aulaId) async {
-    final connection = _connection;
-
-    if (connection == null) {
-      // Manejo de error si la conexión no está disponible
+  void _guardarClase() async {
+    // Verificar que se hayan seleccionado una materia, docente y que la cantidad de estudiantes no sea cero
+    if (selectedMateriasId == -1 || selectedDocenteId == -1 || estudiantes == 0) {
+      // Mostrar un mensaje de error o realizar alguna acción apropiada
+      // Puedes utilizar un ScaffoldMessenger para mostrar un SnackBar con el mensaje de error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Por favor, selecciona una materia, un docente y especifica la cantidad de estudiantes.'),
+        ),
+      );
       return;
     }
 
-    try {
-      final horaInicioStr = '${horaInicio.hour}:${horaInicio.minute}';
-      final horaFinStr = '${horaFin.hour}:${horaFin.minute}';
+   //-------------------------------INICIO LOGICA--------------------------------------------
+    final salon = await _seleccionarSalon(estudiantes);
+    final salonId = salon['idSalon'];
+    final salonNombre = salon['nombre_salon'];
 
-      final results = await connection.query(
-        'SELECT nombre, programa FROM clases WHERE idSalones = ? AND idfecha_clase = ? AND (' +
-            '((hora_inicial <= ? AND hora_final >= ?) OR (hora_inicial >= ? AND hora_final <= ?))' +
-            ')',
-        [
-          aulaId,
-          fechaClaseId,
-          horaInicioStr,
-          horaInicioStr,
-          horaInicioStr,
-          horaFinStr,
-        ],
+    final libre = await seleccionarDiaYHorasDisponibles(selectedJornada);
+    final diaDisp = libre['diaDisponible'];
+    final hora_inicio = libre['horaInicioDisponible'];
+    final hora_final = libre['horaFinDisponible'];
+
+    print('''
+        salon: $salonId $salonNombre
+        dia: $diaDisp
+        hora inicial: $hora_inicio
+        hora final: $hora_final
+    ''');
+
+
+
+    //-----------------------------------FINAL LOGICA----------------------------------------
+/*
+    // Ejemplo de cómo insertar datos en la base de datos utilizando el paquete mysql1:
+    final result = await _connection!.query(
+      'INSERT INTO clases (materia_id, docente_id, cantidad_estudiantes, jornada) '
+          'VALUES (?, ?, ?, ?)',
+      [selectedMateriasId, selectedDocenteId, estudiantes, selectedJornada],
+    );
+
+    if (result != null) {
+      // La inserción fue exitosa
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Clase guardada exitosamente.'),
+        ),
       );
 
-      if (results.isNotEmpty) {
-        final nombreClaseExistente = results.first['nombre'];
-        final programaClaseExistente = results.first['programa'];
+      // Puedes realizar otras acciones necesarias después de guardar la clase, como limpiar los campos, etc.
+      // También puedes navegar a otra pantalla si es necesario.
+    } else {
+      // Ocurrió un error al guardar la clase
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ocurrió un error al guardar la clase. Por favor, inténtalo de nuevo.'),
+        ),
+      );
+    }*/
+  }
 
-        print(
-            'Clase choca con $nombreClaseExistente de $programaClaseExistente');
+  Future<Map<String, dynamic>> _seleccionarSalon(int capacidadRequerida) async {
+    // Realiza una consulta en la base de datos para obtener los salones aptos
+    final results = await _connection!.query(
+      'SELECT CONCAT(bloque, " ", aula) AS nombre_completo, idSalones FROM salones WHERE sillas >= ? ORDER BY sillas ASC',
+      [capacidadRequerida],
+    );
 
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: Text('Error'),
-              content: Text(
-                'Ya existe una clase programada en ese horario y aula. Choca con la clase: $nombreClaseExistente de $programaClaseExistente',
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: Text('Aceptar'),
-                ),
-              ],
-            );
-          },
-        );
-      } else {
-        print(
-            'INSERT INTO clases ($nombreClase, $docenteId, $aulaId, $semestre, $fechaClaseId, $horaInicioStr, $horaFinStr, $directorType, $jornada) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        await connection.query(
-          'INSERT INTO clases (nombre, idDocentes, idSalones, semestre, idfecha_clase, hora_inicial, hora_final, programa, jornada) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [
-            nombreClase,
-            docenteId,
-            aulaId,
-            semestre,
-            fechaClaseId,
-            horaInicioStr,
-            horaFinStr,
-            directorType,
-            jornada,
-          ],
-        );
+    if (results.isNotEmpty) {
 
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: Text('Clase Guardada'),
-              content: Text(
-                  'La clase se ha guardado exitosamente en la base de datos.'),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pop();
-                  },
-                  child: Text('Aceptar'),
-                ),
-              ],
-            );
-          },
-        );
-      }
-    } catch (e) {
-      print('Error al insertar clase: $e');
+      // Selecciona el primer salón con suficiente capacidad
+      final salonSeleccionado = results.first;
+
+      // Retorna la ID y el nombre del salón seleccionado
+      return {
+        'idSalon': salonSeleccionado['idSalones'],
+        'nombre_salon': salonSeleccionado['nombre_completo'],
+      };
+    } else {
+      // No se encontraron salones aptos, puedes devolver un valor por defecto o lanzar una excepción
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se encontraron salones con capacidad suficiente.'),
+        ),
+      );
+      throw Exception('No se encontraron salones con capacidad suficiente.');
     }
   }
 
-  Future<String> obtenerSemestreType() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String semestreType = prefs.getString('semestreType') ?? '';
-    return semestreType;
+  Future<Map<String, dynamic>> seleccionarDiaYHorasDisponibles(String jornada) async {
+    final horaInicio1 = TimeOfDay(hour: 7, minute: 50);
+    final horaFin1 = TimeOfDay(hour: 9, minute: 30);
+    final horaInicio2 = TimeOfDay(hour: 10, minute: 0);
+    final horaFin2 = TimeOfDay(hour: 11, minute: 40);
+    final horaInicio3 = TimeOfDay(hour: 18, minute: 30);
+    final horaFin3 = TimeOfDay(hour: 20, minute: 10);
+    final horaInicio4 = TimeOfDay(hour: 20, minute: 30);
+    final horaFin4 = TimeOfDay(hour: 22, minute: 10);
+
+    int timeOfDayToMinutes(TimeOfDay time) {
+      return time.hour * 60 + time.minute;
+    }
+
+    final clasesEnBaseDeDatos = await getHorariosOcupados();
+    final clasesEnJornada = clasesEnBaseDeDatos.where((clase) => clase.jornada == jornada).toList();
+
+    String diaDisponible = '';
+    TimeOfDay horaInicioDisponible = horaInicio1;
+    TimeOfDay horaFinDisponible = horaFin1;
+
+    final diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+
+    for (final dia in diasSemana) {
+      final clasesEnDia = clasesEnJornada.where((clase) => clase.fechaClase.toLowerCase() == dia).toList();
+      /*print('''
+        jornada: ${clasesEnDia.first.jornada}
+        jornada: ${clasesEnDia.first.fechaClase}
+        jornada: ${clasesEnDia.first.horaFinal}
+        jornada: ${clasesEnDia.first.horaInicial}
+        ''');*/
+      if (clasesEnDia.isEmpty) {
+        diaDisponible = dia;
+        horaInicioDisponible = horaInicio1;
+        horaFinDisponible = horaFin4;
+        break;  // Puedes detener la iteración si se encuentra un día libre
+      } else {
+        clasesEnDia.sort((a, b) => timeOfDayToMinutes(a.horaInicial).compareTo(timeOfDayToMinutes(b.horaInicial)));
+        if ((timeOfDayToMinutes(clasesEnDia.first.horaInicial) >= timeOfDayToMinutes(horaFin1)  && timeOfDayToMinutes(clasesEnDia.first.horaFinal) <= timeOfDayToMinutes(horaFin2)) && (timeOfDayToMinutes(clasesEnDia.last.horaInicial) >= timeOfDayToMinutes(horaFin1)  && timeOfDayToMinutes(clasesEnDia.last.horaFinal) <= timeOfDayToMinutes(horaFin2))) {
+          diaDisponible = "1 $dia";
+          horaInicioDisponible = horaInicio1;
+          horaFinDisponible = horaFin1;
+          break;  // Puedes detener la iteración si se encuentra un día libre
+        } else if ((timeOfDayToMinutes(clasesEnDia.first.horaInicial) >= timeOfDayToMinutes(horaInicio1)  && timeOfDayToMinutes(clasesEnDia.first.horaFinal) <= timeOfDayToMinutes(horaInicio2)) && (timeOfDayToMinutes(clasesEnDia.last.horaInicial) >= timeOfDayToMinutes(horaInicio1)  && timeOfDayToMinutes(clasesEnDia.last.horaFinal) <= timeOfDayToMinutes(horaInicio2))) {
+          diaDisponible = "2 $dia";
+          horaInicioDisponible = horaInicio2;
+          horaFinDisponible = horaFin2;
+          break;  // Puedes detener la iteración si se encuentra un día libre
+        } else if (timeOfDayToMinutes(clasesEnDia.first.horaInicial) >= timeOfDayToMinutes(horaFin3)  && timeOfDayToMinutes(clasesEnDia.first.horaFinal) <= timeOfDayToMinutes(horaFin4)) {
+          diaDisponible = "3 $dia";
+          horaInicioDisponible = horaInicio3;
+          horaFinDisponible = horaFin3;
+          break;  // Puedes detener la iteración si se encuentra un día libre
+        } else if (timeOfDayToMinutes(clasesEnDia.first.horaInicial) >= timeOfDayToMinutes(horaInicio3)  && timeOfDayToMinutes(clasesEnDia.first.horaFinal) <= timeOfDayToMinutes(horaInicio4)) {
+          diaDisponible = "4 $dia";
+          horaInicioDisponible = horaInicio4;
+          horaFinDisponible = horaFin4;
+          break;  // Puedes detener la iteración si se encuentra un día libre
+        }
+      }
+    }
+
+    return {
+      'diaDisponible': diaDisponible,
+      'horaInicioDisponible': horaInicioDisponible,
+      'horaFinDisponible': horaFinDisponible,
+    };
+  }
+
+
+
+
+
+
+
+
+  Future<List<Materias>> _fetchMaterias() async {
+    final results = await _connection!.query('SELECT id, Nombre, creditos FROM materias');
+
+    if (results.isNotEmpty) {
+      return results
+          .map((row) => Materias(row['id'] ?? -1, row['Nombre'] ?? '',row['creditos'] ?? -1))
+          .toList();
+    } else {
+      return [];
+    }
   }
 
   Future<List<Docente>> _fetchDocentes() async {
-    final results = await _connection!
-        .query('SELECT * FROM docentes WHERE programa = ?', [directorType]);
-    return results
-        .map((row) => Docente(row['idDocentes'], row['Nombre']))
-        .toList();
+    final results = await _connection!.query('SELECT idDocentes, Nombre FROM docentes');
+
+    if (results.isNotEmpty) {
+      return results
+          .map((row) => Docente(row['idDocentes'] ?? -1, row['Nombre'] ?? ''))
+          .toList();
+    } else {
+      return [];
+    }
   }
 
-  Future<List<FechaClase>> _fetchFechasClase() async {
-    final results = await _connection!.query('SELECT * FROM fecha_clase');
-    return results
-        .map((row) => FechaClase(row['idfecha_clase'], row['dias']))
-        .toList();
+  Future<List<Clase>> getHorariosOcupados() async {
+    final results = await _connection!.query('''
+    SELECT TIME_FORMAT(c.hora_inicial, "%H:%i:%s") AS hora_inicial, 
+           TIME_FORMAT(c.hora_final, "%H:%i:%s") AS hora_final, 
+           c.jornada, 
+           fc.dias AS nombre_dias
+    FROM clases c
+    INNER JOIN fecha_clase fc ON c.idfecha_clase = fc.idfecha_clase
+  ''');
+
+    if (results.isNotEmpty) {
+      // Mapear resultados de la base de datos a objetos Clase
+      return results.map((row) {
+        final horaInicialString = row['hora_inicial'];
+        final horaFinalString = row['hora_final'];
+
+        final horaInicial = TimeOfDay(
+          hour: int.parse(horaInicialString.split(":")[0]),
+          minute: int.parse(horaInicialString.split(":")[1]),
+        );
+
+        final horaFinal = TimeOfDay(
+          hour: int.parse(horaFinalString.split(":")[0]),
+          minute: int.parse(horaFinalString.split(":")[1]),
+        );
+
+        return Clase(
+          horaInicial: horaInicial,
+          horaFinal: horaFinal,
+          jornada: row['jornada'] ?? '',
+          fechaClase: row['nombre_dias'] ?? -1,
+        );
+      }).toList();
+    } else {
+      return [];
+    }
   }
 
-  Future<String> _getDirectorType() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('directorType') ?? '';
-  }
-
-  @override
-  void dispose() {
-    horaInicioController.dispose();
-    horaFinController.dispose();
-    super.dispose();
+  void printHorariosOcupados(List<Clase> horarios) {
+    for (var horario in horarios) {
+      print('Hora inicial: ${horario.horaInicial}');
+      print('Hora final: ${horario.horaFinal}');
+      print('Jornada: ${horario.jornada}');
+      print('Fecha de Clase: ${horario.fechaClase}');
+      print('---'); // Un separador para cada registro
+    }
   }
 }
 
@@ -532,9 +489,20 @@ class Docente {
   Docente(this.id, this.nombre);
 }
 
-class FechaClase {
+class Materias {
   final int id;
-  final String fecha;
+  final String nombre;
+  final int creditos;
 
-  FechaClase(this.id, this.fecha);
+  Materias(this.id, this.nombre, this.creditos);
 }
+
+class Clase {
+  final TimeOfDay horaInicial;
+  final TimeOfDay horaFinal;
+  final String jornada;
+  final String fechaClase;
+
+  Clase({required this.horaInicial, required this.horaFinal, required this.jornada, required this.fechaClase});
+}
+
