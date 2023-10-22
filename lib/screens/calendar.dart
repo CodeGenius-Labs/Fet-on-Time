@@ -130,6 +130,7 @@ class _CalendarState extends State<Calendar> {
       children: [
         Container(
           child: TableCalendar(
+            calendarFormat: CalendarFormat.week,
             locale: "es_ES",
             rowHeight: 80,
             headerStyle: const HeaderStyle(
@@ -152,6 +153,12 @@ class _CalendarState extends State<Calendar> {
             eventLoader: _getEventsForDay,
           ),
         ),
+        const SizedBox(height: 20),
+        const Text('Eventos',
+            style: TextStyle(
+              fontSize: 20, // Ajusta el tamaño de fuente según tus preferencias
+              fontWeight: FontWeight.bold, // Puedes ajustar el estilo del texto
+            )),
         const SizedBox(height: 20),
         Expanded(
           child: Container(
@@ -215,7 +222,8 @@ class _CalendarState extends State<Calendar> {
             children: [
               Text("Docente: ${event.nombre_docente}"),
               Text("Ubicación: ${event.ubicacion_salon}"),
-              Text("Hora: ${event.hora_clase.substring(0, 5)} - ${event.hora_clase.substring(09, 14)}"),
+              Text(
+                  "Hora: ${event.hora_clase.substring(0, 5)} - ${event.hora_clase.substring(09, 14)}"),
               Text("Jornada: ${event.jornada}")
             ],
           ),
@@ -228,9 +236,10 @@ class _CalendarState extends State<Calendar> {
                     Navigator.of(context).pop();
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => EditarPage(
-                        idClase: idClase,
-                      )),
+                      MaterialPageRoute(
+                          builder: (context) => EditarPage(
+                                idClase: idClase,
+                              )),
                     );
                     SharedPreferences prefs =
                         await SharedPreferences.getInstance();
