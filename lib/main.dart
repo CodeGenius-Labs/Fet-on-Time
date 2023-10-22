@@ -1,4 +1,3 @@
-import 'package:fetontime/screens/eliminar.dart';
 import 'package:fetontime/screens/crear.dart';
 import 'package:fetontime/screens/home.dart';
 import 'package:fetontime/screens/login.dart';
@@ -27,7 +26,6 @@ class MyApp extends StatelessWidget {
         'loading': (_) => LoadingScreen(), // Agrega esta línea
         'loadinglogin': (_) => LoadingScreen(),
         'calendar': (_) => Calendar(),
-        'eliminar': (_) => EliminarPage(),
         'crear': (_) => CrearPage(),
       },
       initialRoute: 'loading',

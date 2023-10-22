@@ -256,7 +256,7 @@ class _CalendarState extends State<Calendar> {
                     Navigator.of(context).pop();
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => EliminarPage()),
+                      MaterialPageRoute(builder: (context) => EliminarPage(idClase: idClase,)),
                     );
                     SharedPreferences prefs =
                         await SharedPreferences.getInstance();

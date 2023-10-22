@@ -4,6 +4,8 @@ import 'package:mysql1/mysql1.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class EliminarPage extends StatefulWidget {
+  final int idClase;
+  EliminarPage({required this.idClase});
   @override
   _EliminarPageState createState() => _EliminarPageState();
 }
@@ -50,11 +52,11 @@ class _EliminarPageState extends State<EliminarPage> {
               onPressed: () async {
                 try {
                   print(
-                      'DELETE FROM clases WHERE nombre = $nombre_viejo AND jornada = $jornada');
+                      'DELETE FROM clases WHERE nombre = ${widget.idClase} AND jornada = $jornada');
                   // Realizar la eliminación de la clase en la base de datos
                   await _connection!.query(
-                    'DELETE FROM clases WHERE nombre = ? AND jornada = ?',
-                    [nombre_viejo, jornada],
+                    'DELETE FROM clases WHERE idClases = ? AND jornada = ?',
+                    [widget.idClase, jornada],
                   );
                   SharedPreferences prefs =
                       await SharedPreferences.getInstance();
