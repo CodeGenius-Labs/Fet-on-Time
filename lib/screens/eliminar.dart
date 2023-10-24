@@ -17,6 +17,7 @@ class _EliminarPageState extends State<EliminarPage> {
 
   @override
   void initState() {
+    print("clase eliminar: ${widget.idClase}");
     super.initState();
     _getnombre_clase().then((value) {
       setState(() {
@@ -50,34 +51,43 @@ class _EliminarPageState extends State<EliminarPage> {
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
-                try {
-                  print(
-                      'DELETE FROM clases WHERE nombre = ${widget.idClase} AND jornada = $jornada');
-                  // Realizar la eliminación de la clase en la base de datos
-                  await _connection!.query(
-                    'DELETE FROM clases WHERE idClases = ? AND jornada = ?',
-                    [widget.idClase, jornada],
-                  );
-                  SharedPreferences prefs =
-                      await SharedPreferences.getInstance();
-                  prefs.setString('status', 'calendar');
-                  // Muestra un SnackBar para indicar que la clase se eliminó correctamente
-                  final snackBar = SnackBar(
-                    content: Text('La clase se eliminó correctamente.'),
-                  );
+                if (_connection != null) {
+                  try {
+                    print(
+                        'DELETE FROM clases WHERE idClases = ${widget.idClase} AND jornada = $jornada');
+                    // Realizar la eliminación de la clase en la base de datos
+                    await _connection!.query(
+                      'DELETE FROM clases WHERE idClases = ? AND jornada = ?',
+                      [widget.idClase, jornada],
+                    );
+                    SharedPreferences prefs =
+                        await SharedPreferences.getInstance();
+                    prefs.setString('status', 'calendar');
+                    // Muestra un SnackBar para indicar que la clase se eliminó correctamente
+                    final snackBar = SnackBar(
+                      content: Text('La clase se eliminó correctamente.'),
+                    );
 
-                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
-                  // Cierra la pantalla de eliminación después de eliminar la clase
-                  Navigator.of(context).pop();
-                } catch (e) {
-                  // Manejar cualquier error que pueda ocurrir durante la eliminación
-                  print('Error al eliminar la clase: $e');
-                  // Puedes mostrar un mensaje de error al usuario si es necesario
+                    // Cierra la pantalla de eliminación después de eliminar la clase
+                    Navigator.of(context).pop();
+                  } catch (e) {
+                    // Manejar cualquier error que pueda ocurrir durante la eliminación
+                    print('Error al eliminar la clase: $e');
+                    // Puedes mostrar un mensaje de error al usuario si es necesario
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error en la conexion, vuelve a intentarlo.'),
+                    ),
+                  );
+                  print('No se ha establecido una conexión a la base de datos.');
                 }
               },
               style: ElevatedButton.styleFrom(
-                primary: Color.fromARGB(255, 40, 140, 1), // Cambia el color del botón
+                backgroundColor: Color.fromARGB(255, 40, 140, 1), // Cambia el color del botón
               ),
               child: Text('Eliminar Clase'),
             ),

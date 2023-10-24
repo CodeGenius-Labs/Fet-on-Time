@@ -15,10 +15,10 @@ class Calendar extends StatefulWidget {
 
 class _CalendarState extends State<Calendar> {
   String semestre = '';
-  int idClase = 0;
   String directorType = ''; // Declaración de la variable directorType
   DateTime today = DateTime.now();
   DateTime? _selectedDay;
+  bool _mounted = false;
   late ValueNotifier<List<Event>> _selectedEvents;
   MySqlConnection? _connection; // Variable para la conexión
 
@@ -44,12 +44,14 @@ class _CalendarState extends State<Calendar> {
         _connection = connection;
       });
     });
+    _mounted = true;
   }
 
   @override
   void dispose() {
+    _mounted = false;
     _selectedEvents.dispose();
-    _connection?.close(); // Cierra la conexión al finalizar
+    _connection?.close();
     super.dispose();
   }
 
@@ -60,17 +62,15 @@ class _CalendarState extends State<Calendar> {
   }
 
   Future<void> _updateEvents() async {
-    if (_selectedDay != null &&
-        directorType.isNotEmpty &&
-        _connection != null) {
-      final dayOfWeek =
-          DateFormat('EEEE', 'es_ES').format(_selectedDay!).toLowerCase();
-      final filteredEvents =
-          await fetchFilteredEventsFromDatabase(dayOfWeek, directorType);
+    if (_selectedDay != null && directorType.isNotEmpty && _connection != null) {
+      final dayOfWeek = DateFormat('EEEE', 'es_ES').format(_selectedDay!).toLowerCase();
+      final filteredEvents = await fetchFilteredEventsFromDatabase(dayOfWeek, directorType);
 
-      setState(() {
-        events[_selectedDay!] = filteredEvents;
-      });
+      if (_mounted) {
+        setState(() {
+          events[_selectedDay!] = filteredEvents;
+        });
+      }
     }
   }
 
@@ -79,15 +79,17 @@ class _CalendarState extends State<Calendar> {
     try {
       final results = await _connection!.query(
         'SELECT c.idClases AS id_clase, m.nombre AS nombre_clase, c.jornada AS jornada, d.Nombre AS nombre_docente, '
-        'CONCAT(s.bloque, "-", s.aula) AS ubicacion_salon,'
-        'CONCAT(c.hora_inicial, "-", c.hora_final) AS hora_clase FROM clases c '
-        'INNER JOIN docentes d ON c.idDocentes = d.idDocentes '
-        'INNER JOIN materias m ON c.idmaterias = m.id '
-        'INNER JOIN salones s ON c.idSalones = s.idSalones '
-        'INNER JOIN fecha_clase fc ON c.idfecha_clase = fc.idfecha_clase '
-        'WHERE fc.dias = ? AND c.programa = ? AND c.semestre = ?',
+            'CONCAT(s.bloque, "-", s.aula) AS ubicacion_salon,'
+            'CONCAT(c.hora_inicial, "-", c.hora_final) AS hora_clase FROM clases c '
+            'INNER JOIN docentes d ON c.idDocentes = d.idDocentes '
+            'INNER JOIN materias m ON c.idmaterias = m.id '
+            'INNER JOIN salones s ON c.idSalones = s.idSalones '
+            'INNER JOIN fecha_clase fc ON c.idfecha_clase = fc.idfecha_clase '
+            'WHERE fc.dias = ? AND c.programa = ? AND c.semestre = ? '
+            'ORDER BY c.hora_inicial', // Agrega esta línea para ordenar por hora_inicial
         [dayOfWeek, directorType, semestre],
       );
+
 
       final events = <Event>[];
       for (var row in results) {
@@ -97,10 +99,8 @@ class _CalendarState extends State<Calendar> {
           row['nombre_docente'],
           row['ubicacion_salon'],
           row['hora_clase'],
+          row['id_clase'],
         ));
-        // Aquí asigna el ID de la clase a la variable idClase
-        print(row['id_clase']);
-        idClase = row['id_clase'];
       }
 
       return events;
@@ -238,7 +238,7 @@ class _CalendarState extends State<Calendar> {
                       context,
                       MaterialPageRoute(
                           builder: (context) => EditarPage(
-                                idClase: idClase,
+                                idClase: event.id_clase,
                               )),
                     );
                     SharedPreferences prefs =
@@ -256,7 +256,7 @@ class _CalendarState extends State<Calendar> {
                     Navigator.of(context).pop();
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => EliminarPage(idClase: idClase,)),
+                      MaterialPageRoute(builder: (context) => EliminarPage(idClase: event.id_clase,)),
                     );
                     SharedPreferences prefs =
                         await SharedPreferences.getInstance();
@@ -322,7 +322,8 @@ class Event {
   String nombre_docente;
   String ubicacion_salon;
   String hora_clase;
+  int id_clase;
 
   Event(this.nombre_clase, this.jornada, this.nombre_docente,
-      this.ubicacion_salon, this.hora_clase);
+      this.ubicacion_salon, this.hora_clase, this.id_clase);
 }

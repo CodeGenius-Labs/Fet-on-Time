@@ -11,10 +11,13 @@ class CrearPage extends StatefulWidget {
 
 class _CrearPageState extends State<CrearPage> {
   MySqlConnection? _connection;
+  String semestre = '';
+  String directorType = '';
   int estudiantes = 0;
   String selectedJornada = 'diurna';
   List<String> condiciones = [];
   int selectedMateriasId = -1;
+  int materiaCreditos = -1;
   List<DropdownMenuItem<Materias>> materiasDropdown = [];
   int selectedDocenteId = -1;
   List<DropdownMenuItem<Docente>> docentesDropdown = [];
@@ -25,6 +28,16 @@ class _CrearPageState extends State<CrearPage> {
   @override
   void initState() {
     super.initState();
+    obtenerSemestreType().then((value) {
+      setState(() {
+        semestre = value;
+      });
+    });
+    _getDirectorType().then((value) {
+      setState(() {
+        directorType = value;
+      });
+    });
     getConnection().then((connection) {
       setState(() {
         _connection = connection;
@@ -40,6 +53,16 @@ class _CrearPageState extends State<CrearPage> {
         });
       });
     });
+  }
+  Future<String> obtenerSemestreType() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String semestreType = prefs.getString('semestreType') ?? '';
+    return semestreType;
+  }
+
+  Future<String> _getDirectorType() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('directorType') ?? '';
   }
 
   // Función para cargar las opciones de los desplegables
@@ -65,7 +88,7 @@ class _CrearPageState extends State<CrearPage> {
     });
   }
   void _openAgregarDiasJornadasDialog(BuildContext context) {
-    String nuevoDia = 'lunes'; // Variable para el día ingresado
+    String nuevoDia = 'Lunes'; // Variable para el día ingresado
     String nuevaJornada = 'diurna'; // Variable para la jornada ingresada
 
     showDialog(
@@ -164,6 +187,7 @@ class _CrearPageState extends State<CrearPage> {
                 onChanged: (materia) {
                   setState(() {
                     selectedMateriasId = materia!.id;
+                    materiaCreditos = materia.creditos;
                   });
                 },
                 hint: Text('Seleccione una Materia'),
@@ -258,70 +282,355 @@ class _CrearPageState extends State<CrearPage> {
     }
 
    //-------------------------------INICIO LOGICA--------------------------------------------
-    final salon = await _seleccionarSalon(estudiantes);
-    final salonId = salon['idSalon'];
-    final salonNombre = salon['nombre_salon'];
+    /*final salonId = salon['idSalon'];
+    final salonNombre = salon['nombre_salon'];*/
 
-    final libre = await seleccionarDiaYHorasDisponibles(selectedJornada);
+    final libre = await seleccionarDiaYHorasDisponibles(selectedJornada, estudiantes, materiaCreditos);
     final diaDisp = libre['diaDisponible'];
     final hora_inicio = libre['horaInicioDisponible'];
     final hora_final = libre['horaFinDisponible'];
-
+    final salonNombre = libre['nombre_completo'];
+    final idSalon = libre['idSalon'];
     print('''
-        salon: $salonId $salonNombre
+        salon: $idSalon $salonNombre
         dia: $diaDisp
         hora inicial: $hora_inicio
         hora final: $hora_final
     ''');
+    final horaInicioStr = '${hora_inicio.hour}:${hora_inicio.minute}';
+    final horaFinStr = '${hora_final.hour}:${hora_final.minute}';
+
 
 
 
     //-----------------------------------FINAL LOGICA----------------------------------------
-/*
     // Ejemplo de cómo insertar datos en la base de datos utilizando el paquete mysql1:
-    final result = await _connection!.query(
-      'INSERT INTO clases (materia_id, docente_id, cantidad_estudiantes, jornada) '
-          'VALUES (?, ?, ?, ?)',
-      [selectedMateriasId, selectedDocenteId, estudiantes, selectedJornada],
-    );
-
-    if (result != null) {
-      // La inserción fue exitosa
+    try {
+      print('INSERT INTO clases(idmaterias, idDocentes, idSalones, semestre, idfecha_clase, hora_inicial, hora_final, programa, jornada) VALUES ($selectedMateriasId, $selectedDocenteId, $idSalon, $semestre, $diaDisp, $horaInicioStr, $horaFinStr, $directorType, $selectedJornada)');
+      final result = await _connection!.query(
+        'INSERT INTO clases(idmaterias, idDocentes, idSalones, semestre, idfecha_clase, hora_inicial, hora_final, programa, jornada) VALUES (?,?,?,?,?,?,?,?,?)',
+        [selectedMateriasId, selectedDocenteId, idSalon, semestre, diaDisp, horaInicioStr, horaFinStr, directorType, selectedJornada],
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Clase guardada exitosamente.'),
         ),
       );
-
-      // Puedes realizar otras acciones necesarias después de guardar la clase, como limpiar los campos, etc.
-      // También puedes navegar a otra pantalla si es necesario.
-    } else {
-      // Ocurrió un error al guardar la clase
+      Navigator.of(context).pop();
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Ocurrió un error al guardar la clase. Por favor, inténtalo de nuevo.'),
         ),
       );
-    }*/
+      // Manejar cualquier error que pueda ocurrir durante la eliminación
+      print('Error al crear la clase: $e');
+      // Puedes mostrar un mensaje de error al usuario si es necesario
+    }
   }
 
-  Future<Map<String, dynamic>> _seleccionarSalon(int capacidadRequerida) async {
+  Future<Map<String, dynamic>> seleccionarDiaYHorasDisponibles(String jornada, int capacidadRequerida, int materiaCreditos) async {
     // Realiza una consulta en la base de datos para obtener los salones aptos
+    final horaInicio1 = TimeOfDay(hour: 7, minute: 50);
+    final horaFin1 = TimeOfDay(hour: 8, minute: 40);
+    final horaInicio2 = TimeOfDay(hour: 8, minute: 40);
+    final horaFin2 = TimeOfDay(hour: 9, minute: 30);
+    final horaInicio3 = TimeOfDay(hour: 10, minute: 00);
+    final horaFin3 = TimeOfDay(hour: 10, minute: 50);
+    final horaInicio4 = TimeOfDay(hour: 10, minute: 50);
+    final horaFin4 = TimeOfDay(hour: 11, minute: 40);
+
+    final horaInicio5 = TimeOfDay(hour: 18, minute: 30);
+    final horaFin5 = TimeOfDay(hour: 19, minute: 20);
+    final horaInicio6 = TimeOfDay(hour: 19, minute: 20);
+    final horaFin6 = TimeOfDay(hour: 20, minute: 10);
+    final horaInicio7 = TimeOfDay(hour: 20, minute: 30);
+    final horaFin7 = TimeOfDay(hour: 21, minute: 20);
+    final horaInicio8 = TimeOfDay(hour: 21, minute: 20);
+    final horaFin8 = TimeOfDay(hour: 22, minute: 10);
+
+    String diaDisponible = '';
+    String nombrecompleto = '';
+    int idSalon = -1;
+    int selectedSalonIndex = 0;
+    TimeOfDay horaInicioDisponible = horaInicio1;
+    TimeOfDay horaFinDisponible = horaFin1;
+    int creditos = materiaCreditos;
+
+
     final results = await _connection!.query(
       'SELECT CONCAT(bloque, " ", aula) AS nombre_completo, idSalones FROM salones WHERE sillas >= ? ORDER BY sillas ASC',
       [capacidadRequerida],
     );
-
+    final resultList = results.toList();
     if (results.isNotEmpty) {
+      while(selectedSalonIndex < resultList.length){
+        // Selecciona el primer salón con suficiente capacidad
+        final salonSeleccionado = resultList[selectedSalonIndex];
+        idSalon = salonSeleccionado['idSalones'];
+        nombrecompleto = salonSeleccionado['nombre_completo'];
 
-      // Selecciona el primer salón con suficiente capacidad
-      final salonSeleccionado = results.first;
-
-      // Retorna la ID y el nombre del salón seleccionado
-      return {
+        // Retorna la ID y el nombre del salón seleccionado
+        /*return {
         'idSalon': salonSeleccionado['idSalones'],
         'nombre_salon': salonSeleccionado['nombre_completo'],
-      };
+      };*/
+
+        int timeOfDayToMinutes(TimeOfDay time) {
+          return time.hour * 60 + time.minute;
+        }
+
+        final clasesEnBaseDeDatos = await getHorariosOcupados();
+        final clasesEnSalon = clasesEnBaseDeDatos.where((clase) => clase.jornada == jornada).toList();
+        final clasesEnJornada = clasesEnSalon.where((clase) => clase.idSalones == idSalon).toList();
+
+
+        final diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+
+
+        while(creditos > 0){
+          for (final dia in diasSemana) {
+            final clasesEnDia = clasesEnJornada.where((clase) => clase.fechaClase.toLowerCase() == dia).toList();
+            print('creditos: $creditos');
+            if (clasesEnDia.isEmpty) {
+              print("empty");
+              if (jornada == "diurna"){
+                if(creditos == 2){
+                  diaDisponible = dia;
+                  horaInicioDisponible = horaInicio1;
+                  horaFinDisponible = horaFin2;
+                  creditos -= 2;
+                  break;  // Puedes detener la iteración si se encuentra un día libree
+                } else if(creditos == 1) {
+                  diaDisponible = dia;
+                  horaInicioDisponible = horaInicio1;
+                  horaFinDisponible = horaFin1;
+                  creditos--;
+                  break;  // Puedes detener la iteración si se encuentra un día libree
+                } else {
+                  break;
+                }
+              } else {
+                if(creditos == 2){
+                  diaDisponible = dia;
+                  horaInicioDisponible = horaInicio5;
+                  horaFinDisponible = horaFin6;
+                  creditos -= 2;
+                  break;  // Puedes detener la iteración si se encuentra un día libree
+                } else if(creditos == 1) {
+                  diaDisponible = dia;
+                  horaInicioDisponible = horaInicio5;
+                  horaFinDisponible = horaFin5;
+                  creditos--;
+                  break;  // Puedes detener la iteración si se encuentra un día libree
+                } else {
+                  break;
+                }
+              }
+
+            } else {
+              clasesEnDia.sort((a, b) => timeOfDayToMinutes(a.horaInicial).compareTo(timeOfDayToMinutes(b.horaInicial)));
+              print('''
+                CLASE FINAL
+                jornada: ${clasesEnDia.last.jornada}
+                dia: ${clasesEnDia.last.fechaClase}
+                inicial: ${clasesEnDia.last.horaInicial}
+                final: ${clasesEnDia.last.horaFinal}
+                -------------------------------------------
+                CLASE INICIAL
+                jornada: ${clasesEnDia.first.jornada}
+                dia: ${clasesEnDia.first.fechaClase}
+                inicial: ${clasesEnDia.first.horaInicial}
+                final: ${clasesEnDia.first.horaFinal}
+              ''');
+
+              if (clasesEnDia.last.jornada == "diurna"){
+                if (timeOfDayToMinutes(clasesEnDia.last.horaInicial) > timeOfDayToMinutes(horaInicio1)){
+                  if (timeOfDayToMinutes(clasesEnDia.last.horaInicial) > timeOfDayToMinutes(horaInicio2)){
+                    if (timeOfDayToMinutes(clasesEnDia.last.horaInicial) > timeOfDayToMinutes(horaInicio3)){
+
+                    } else{
+                      print("3");
+                      if (creditos == 2){
+                        print("3.1");
+                      } else{
+                        if (timeOfDayToMinutes(clasesEnDia.first.horaFinal) < timeOfDayToMinutes(horaInicio3) && timeOfDayToMinutes(clasesEnDia.last.horaInicial) > timeOfDayToMinutes(horaInicio3)){
+                          print("3.1.1");
+                        }else if (timeOfDayToMinutes(clasesEnDia.first.horaFinal) < timeOfDayToMinutes(horaInicio3)){
+                          if(timeOfDayToMinutes(clasesEnDia.last.horaInicial) >= timeOfDayToMinutes(horaInicio3) && timeOfDayToMinutes(clasesEnDia.last.horaFinal) <= timeOfDayToMinutes(horaFin3)){
+                            print("3.1.2.1");
+                            diaDisponible = dia;
+                            horaInicioDisponible = horaInicio4;
+                            horaFinDisponible = horaFin4;
+                            creditos--;
+                            break;
+                          } else {
+                            print("3.1.2.2");
+                          }
+                          /*diaDisponible = dia;
+                          horaInicioDisponible = horaInicio4;
+                          horaFinDisponible = horaFin4;
+                          creditos--;
+                          break;*/
+                        } else {
+                          print("3.1.3");
+                          diaDisponible = dia;
+                          horaInicioDisponible = horaInicio4;
+                          horaFinDisponible = horaFin4;
+                          creditos--;
+                        }
+                      }
+                    }
+                  } else {
+                    print("2");
+                    if(creditos == 2){
+                      print("2.1");
+                      diaDisponible = dia;
+                      horaInicioDisponible = horaInicio3;
+                      horaFinDisponible = horaFin4;
+                      creditos -= 2;
+                      break;
+                    } else if(creditos == 1){
+                      print("2.2");
+                      diaDisponible = dia;
+                      horaInicioDisponible = horaInicio3;
+                      horaFinDisponible = horaFin3;
+                      creditos--;
+                      break;
+                    } else {
+                      break;
+                    }
+
+                  }
+                } else {
+                  print("1");
+                  if(timeOfDayToMinutes(clasesEnDia.last.horaFinal) > timeOfDayToMinutes(horaFin1)) {
+                    if (creditos == 2){
+                      print("1.1.1");
+                      diaDisponible = dia;
+                      horaInicioDisponible = horaInicio3;
+                      horaFinDisponible = horaFin4;
+                      creditos -= 2;
+                      break;
+                    } else{
+                      print("1.1.2");
+                      diaDisponible = dia;
+                      horaInicioDisponible = horaInicio3;
+                      horaFinDisponible = horaFin3;
+                      creditos--;
+                      break;
+                    }
+                  } else {
+                    if (creditos == 2){
+                      print("1.2.1");
+                      diaDisponible = dia;
+                      horaInicioDisponible = horaInicio3;
+                      horaFinDisponible = horaFin4;
+                      creditos -= 2;
+                      break;
+                    } else{
+                      print("1.2.2");
+                      diaDisponible = dia;
+                      horaInicioDisponible = horaInicio2;
+                      horaFinDisponible = horaFin2;
+                      creditos--;
+                      break;
+                    }
+                  }
+                }
+              } else{
+                if (timeOfDayToMinutes(clasesEnDia.last.horaInicial) > timeOfDayToMinutes(horaInicio5)){
+                  if (timeOfDayToMinutes(clasesEnDia.last.horaInicial) > timeOfDayToMinutes(horaInicio6)){
+                    if (timeOfDayToMinutes(clasesEnDia.last.horaInicial) > timeOfDayToMinutes(horaInicio7)){
+
+                    } else{
+                      print("4");
+                      if (creditos == 2){
+                        print("4.1");
+                      } else{
+                        diaDisponible = dia;
+                        horaInicioDisponible = horaInicio8;
+                        horaFinDisponible = horaFin8;
+                        creditos--;
+                        break;
+                      }
+                    }
+                  } else {
+                    print("5");
+                    if(creditos == 2){
+                      print("5.1");
+                      diaDisponible = dia;
+                      horaInicioDisponible = horaInicio7;
+                      horaFinDisponible = horaFin8;
+                      creditos -= 2;
+                      break;
+                    } else if(creditos == 1){
+                      print("5.2");
+                      diaDisponible = dia;
+                      horaInicioDisponible = horaInicio7;
+                      horaFinDisponible = horaFin7;
+                      creditos--;
+                      break;
+                    } else {
+                      break;
+                    }
+
+                  }
+                } else {
+                  print("6");
+                  if(timeOfDayToMinutes(clasesEnDia.last.horaFinal) > timeOfDayToMinutes(horaFin5)) {
+                    if (creditos == 2){
+                      print("6.1.1");
+                      diaDisponible = dia;
+                      horaInicioDisponible = horaInicio7;
+                      horaFinDisponible = horaFin8;
+                      creditos -= 2;
+                      break;
+                    } else{
+                      print("6.1.2");
+                      diaDisponible = dia;
+                      horaInicioDisponible = horaInicio7;
+                      horaFinDisponible = horaFin7;
+                      creditos--;
+                      break;
+                    }
+                  } else {
+                    if (creditos == 2){
+                      print("6.2.1");
+                      diaDisponible = dia;
+                      horaInicioDisponible = horaInicio7;
+                      horaFinDisponible = horaFin8;
+                      creditos -= 2;
+                      break;
+                    } else{
+                      print("6.2.2");
+                      diaDisponible = dia;
+                      horaInicioDisponible = horaInicio6;
+                      horaFinDisponible = horaFin6;
+                      creditos--;
+                      break;
+                    }
+                  }
+                }
+              }
+
+
+
+            }
+            print(dia);
+          }
+        }
+        if (diaDisponible.isEmpty) {
+          selectedSalonIndex++;
+          // Si ya no hay más salones, termina el bucle
+          if (selectedSalonIndex >= resultList.length) {
+            break;
+          }
+        } else {
+          // Si se encontró un día libre, sal del bucle while
+          break;
+        }
+      }
     } else {
       // No se encontraron salones aptos, puedes devolver un valor por defecto o lanzar una excepción
       ScaffoldMessenger.of(context).showSnackBar(
@@ -331,74 +640,35 @@ class _CrearPageState extends State<CrearPage> {
       );
       throw Exception('No se encontraron salones con capacidad suficiente.');
     }
-  }
+    int idfecha_clase; // Variable para almacenar el valor de idfecha_clase
 
-  Future<Map<String, dynamic>> seleccionarDiaYHorasDisponibles(String jornada) async {
-    final horaInicio1 = TimeOfDay(hour: 7, minute: 50);
-    final horaFin1 = TimeOfDay(hour: 9, minute: 30);
-    final horaInicio2 = TimeOfDay(hour: 10, minute: 0);
-    final horaFin2 = TimeOfDay(hour: 11, minute: 40);
-    final horaInicio3 = TimeOfDay(hour: 18, minute: 30);
-    final horaFin3 = TimeOfDay(hour: 20, minute: 10);
-    final horaInicio4 = TimeOfDay(hour: 20, minute: 30);
-    final horaFin4 = TimeOfDay(hour: 22, minute: 10);
-
-    int timeOfDayToMinutes(TimeOfDay time) {
-      return time.hour * 60 + time.minute;
-    }
-
-    final clasesEnBaseDeDatos = await getHorariosOcupados();
-    final clasesEnJornada = clasesEnBaseDeDatos.where((clase) => clase.jornada == jornada).toList();
-
-    String diaDisponible = '';
-    TimeOfDay horaInicioDisponible = horaInicio1;
-    TimeOfDay horaFinDisponible = horaFin1;
-
-    final diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-
-    for (final dia in diasSemana) {
-      final clasesEnDia = clasesEnJornada.where((clase) => clase.fechaClase.toLowerCase() == dia).toList();
-      /*print('''
-        jornada: ${clasesEnDia.first.jornada}
-        jornada: ${clasesEnDia.first.fechaClase}
-        jornada: ${clasesEnDia.first.horaFinal}
-        jornada: ${clasesEnDia.first.horaInicial}
-        ''');*/
-      if (clasesEnDia.isEmpty) {
-        diaDisponible = dia;
-        horaInicioDisponible = horaInicio1;
-        horaFinDisponible = horaFin4;
-        break;  // Puedes detener la iteración si se encuentra un día libre
-      } else {
-        clasesEnDia.sort((a, b) => timeOfDayToMinutes(a.horaInicial).compareTo(timeOfDayToMinutes(b.horaInicial)));
-        if ((timeOfDayToMinutes(clasesEnDia.first.horaInicial) >= timeOfDayToMinutes(horaFin1)  && timeOfDayToMinutes(clasesEnDia.first.horaFinal) <= timeOfDayToMinutes(horaFin2)) && (timeOfDayToMinutes(clasesEnDia.last.horaInicial) >= timeOfDayToMinutes(horaFin1)  && timeOfDayToMinutes(clasesEnDia.last.horaFinal) <= timeOfDayToMinutes(horaFin2))) {
-          diaDisponible = "1 $dia";
-          horaInicioDisponible = horaInicio1;
-          horaFinDisponible = horaFin1;
-          break;  // Puedes detener la iteración si se encuentra un día libre
-        } else if ((timeOfDayToMinutes(clasesEnDia.first.horaInicial) >= timeOfDayToMinutes(horaInicio1)  && timeOfDayToMinutes(clasesEnDia.first.horaFinal) <= timeOfDayToMinutes(horaInicio2)) && (timeOfDayToMinutes(clasesEnDia.last.horaInicial) >= timeOfDayToMinutes(horaInicio1)  && timeOfDayToMinutes(clasesEnDia.last.horaFinal) <= timeOfDayToMinutes(horaInicio2))) {
-          diaDisponible = "2 $dia";
-          horaInicioDisponible = horaInicio2;
-          horaFinDisponible = horaFin2;
-          break;  // Puedes detener la iteración si se encuentra un día libre
-        } else if (timeOfDayToMinutes(clasesEnDia.first.horaInicial) >= timeOfDayToMinutes(horaFin3)  && timeOfDayToMinutes(clasesEnDia.first.horaFinal) <= timeOfDayToMinutes(horaFin4)) {
-          diaDisponible = "3 $dia";
-          horaInicioDisponible = horaInicio3;
-          horaFinDisponible = horaFin3;
-          break;  // Puedes detener la iteración si se encuentra un día libre
-        } else if (timeOfDayToMinutes(clasesEnDia.first.horaInicial) >= timeOfDayToMinutes(horaInicio3)  && timeOfDayToMinutes(clasesEnDia.first.horaFinal) <= timeOfDayToMinutes(horaInicio4)) {
-          diaDisponible = "4 $dia";
-          horaInicioDisponible = horaInicio4;
-          horaFinDisponible = horaFin4;
-          break;  // Puedes detener la iteración si se encuentra un día libre
-        }
-      }
+    if (diaDisponible == "lunes") {
+      idfecha_clase = 1;
+    } else if (diaDisponible == "martes") {
+      idfecha_clase = 2;
+    } else if (diaDisponible == "miercoles") {
+      idfecha_clase = 3;
+    } else if (diaDisponible == "jueves") {
+      idfecha_clase = 4;
+    } else if (diaDisponible == "viernes") {
+      idfecha_clase = 5;
+    } else if (diaDisponible == "sabado") {
+      idfecha_clase = 6;
+    } else if (diaDisponible == "domingo") {
+      idfecha_clase = 7;
+    } else {
+      // Si diaDisponible no coincide con ningún día, puedes asignar un valor predeterminado o mostrar un mensaje de error
+      idfecha_clase = -1; // Valor predeterminado o cualquier otro valor adecuado
+      print("Día no válido"); // Mensaje de error
     }
 
     return {
-      'diaDisponible': diaDisponible,
+
+      'diaDisponible': idfecha_clase,
       'horaInicioDisponible': horaInicioDisponible,
       'horaFinDisponible': horaFinDisponible,
+      'nombre_completo': nombrecompleto,
+      'idSalon': idSalon,
     };
   }
 
@@ -435,10 +705,11 @@ class _CrearPageState extends State<CrearPage> {
 
   Future<List<Clase>> getHorariosOcupados() async {
     final results = await _connection!.query('''
-    SELECT TIME_FORMAT(c.hora_inicial, "%H:%i:%s") AS hora_inicial, 
-           TIME_FORMAT(c.hora_final, "%H:%i:%s") AS hora_final, 
-           c.jornada, 
-           fc.dias AS nombre_dias
+    SELECT TIME_FORMAT(c.hora_inicial, "%H:%i:%s") AS hora_inicial,
+           TIME_FORMAT(c.hora_final, "%H:%i:%s") AS hora_final,
+           c.jornada,
+           fc.dias AS nombre_dias,
+           c.idSalones
     FROM clases c
     INNER JOIN fecha_clase fc ON c.idfecha_clase = fc.idfecha_clase
   ''');
@@ -463,7 +734,8 @@ class _CrearPageState extends State<CrearPage> {
           horaInicial: horaInicial,
           horaFinal: horaFinal,
           jornada: row['jornada'] ?? '',
-          fechaClase: row['nombre_dias'] ?? -1,
+          fechaClase: row['nombre_dias'] ?? '',
+          idSalones: row['idSalones'] ?? -1,
         );
       }).toList();
     } else {
@@ -477,6 +749,7 @@ class _CrearPageState extends State<CrearPage> {
       print('Hora final: ${horario.horaFinal}');
       print('Jornada: ${horario.jornada}');
       print('Fecha de Clase: ${horario.fechaClase}');
+      print('ID Clase: ${horario.idSalones}');
       print('---'); // Un separador para cada registro
     }
   }
@@ -502,7 +775,8 @@ class Clase {
   final TimeOfDay horaFinal;
   final String jornada;
   final String fechaClase;
+  final int idSalones;
 
-  Clase({required this.horaInicial, required this.horaFinal, required this.jornada, required this.fechaClase});
+  Clase({required this.horaInicial, required this.horaFinal, required this.jornada, required this.fechaClase, required this.idSalones});
 }
 
