@@ -1,7 +1,8 @@
 import 'package:fetontime/screens/crear.dart';
-import 'package:fetontime/screens/home.dart';
+import 'package:fetontime/screens/verhorarios.dart';
 import 'package:fetontime/screens/login.dart';
 import 'package:fetontime/screens/calendar.dart';
+import 'package:fetontime/screens/inicio.dart';
 // ignore: unused_import
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,6 +24,7 @@ class MyApp extends StatelessWidget {
       routes: {
         'login': (_) => login(), // Elimina 'const' aquí
         'home': (_) => const home(),
+        'inicio': (_) => HomePage(),
         'loading': (_) => LoadingScreen(), // Agrega esta línea
         'loadinglogin': (_) => LoadingScreen(),
         'calendar': (_) => Calendar(),
@@ -52,7 +54,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
     // Simula una pausa para mostrar el logo
     await Future.delayed(Duration(seconds: 2));
 
-    Navigator.pushReplacementNamed(context, isLoggedIn ? 'home' : 'login');
+    Navigator.pushReplacementNamed(context, isLoggedIn ? 'inicio' : 'login');
   }
 
   @override
