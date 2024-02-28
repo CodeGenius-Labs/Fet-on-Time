@@ -21,15 +21,14 @@ class _LoadingScreenState extends State<LoadingScreen> {
 
     await Future.delayed(Duration(seconds: 2)); // Esperar 2 segundos (simulación)
 
-    if (status == 'home' && isLoggedIn ) {
-      Navigator.pushReplacementNamed(context, 'home');
+    if (status == 'home' && isLoggedIn) {
+      Navigator.pushReplacementNamed(context, 'inicio');
     } else if (status == 'login' && !isLoggedIn) {
       Navigator.pushReplacementNamed(context, 'login');
-    } else if (status == 'calendar' && isLoggedIn){
+    } else if (status == 'calendar' && isLoggedIn) {
       Navigator.pushReplacementNamed(context, 'calendar');
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
