@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color.fromARGB(255, 40, 140, 1),
+        backgroundColor: const Color.fromARGB(255, 40, 140, 1),
         toolbarHeight: 120,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -16,14 +18,14 @@ class HomePage extends StatelessWidget {
               width: 120,
               height: 120,
             ),
-            SizedBox(width: 9),
+            const SizedBox(width: 9),
             FutureBuilder<String>(
               future: _getDirectorType(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
+                  return const CircularProgressIndicator();
                 } else if (snapshot.hasError) {
-                  return Text('Error al obtener el tipo de director');
+                  return const Text('Error al obtener el tipo de director');
                 } else {
                   final directorType = snapshot.data ?? '';
                   return Text(
@@ -45,50 +47,50 @@ class HomePage extends StatelessWidget {
           children: [
             ElevatedButton(
               onPressed: () {
-                
+                Navigator.pushNamed(context, 'CrearHorario');
               },
               style: ElevatedButton.styleFrom(
-                primary: Colors.green,
-                padding: EdgeInsets.symmetric(vertical: 20, horizontal: 30),
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 30),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),
-                textStyle: TextStyle(
+                textStyle: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              child: Text(
+              child: const Text(
                 'Crear Horarios',
                 style: TextStyle(
                   color: Colors.white,
                 ),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, 'home');
+                Navigator.pushNamed(context, 'VerHorarios');
               },
               style: ElevatedButton.styleFrom(
-                primary: Colors.green,
-                padding: EdgeInsets.symmetric(vertical: 20, horizontal: 30),
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 30),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),
-                textStyle: TextStyle(
+                textStyle: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              child: Text(
+              child: const Text(
                 'Ver Horarios',
                 style: TextStyle(
                   color: Colors.white,
                 ),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
                 SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -97,17 +99,17 @@ class HomePage extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, 'loadinglogin');
               },
               style: ElevatedButton.styleFrom(
-                primary: Colors.green,
-                padding: EdgeInsets.symmetric(vertical: 20, horizontal: 30),
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 30),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),
-                textStyle: TextStyle(
+                textStyle: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              child: Text(
+              child: const Text(
                 'Cerrar Sesión',
                 style: TextStyle(
                   color: Colors.white,

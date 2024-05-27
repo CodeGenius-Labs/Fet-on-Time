@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoadingScreen extends StatefulWidget {
+  const LoadingScreen({super.key});
+
   @override
   _LoadingScreenState createState() => _LoadingScreenState();
 }
@@ -19,7 +21,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
     bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
     String status = prefs.getString('status') ?? '';
 
-    await Future.delayed(Duration(seconds: 2)); // Esperar 2 segundos (simulación)
+    await Future.delayed(const Duration(seconds: 2)); // Esperar 2 segundos (simulación)
 
     if (status == 'home' && isLoggedIn) {
       Navigator.pushReplacementNamed(context, 'inicio');
@@ -42,10 +44,10 @@ class _LoadingScreenState extends State<LoadingScreen> {
               width: 150, // Ancho deseado del logo
               height: 150, // Alto deseado del logo
             ),
-            SizedBox(height: 20),
-            CircularProgressIndicator(), // Indicador visual de carga
-            SizedBox(height: 10),
-            Text('Cargando...'), // Mensaje de carga
+            const SizedBox(height: 20),
+            const CircularProgressIndicator(), // Indicador visual de carga
+            const SizedBox(height: 10),
+            const Text('Cargando...'), // Mensaje de carga
           ],
         ),
       ),

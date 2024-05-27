@@ -1,7 +1,9 @@
+import 'package:fetontime/screens/calendar.dart';
+import 'package:fetontime/screens/calendar2.dart';
 import 'package:fetontime/screens/crear.dart';
 import 'package:fetontime/screens/verhorarios.dart';
+import 'package:fetontime/screens/crearhorarios.dart';
 import 'package:fetontime/screens/login.dart';
-import 'package:fetontime/screens/calendar.dart';
 import 'package:fetontime/screens/inicio.dart';
 // ignore: unused_import
 import 'package:flutter/material.dart';
@@ -9,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() {
-  initializeDateFormatting().then((_) => runApp(MyApp()));
+  initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
 //void main() => runApp(const MyApp());
 
@@ -23,12 +25,13 @@ class MyApp extends StatelessWidget {
       title: 'Fet On Time',
       routes: {
         'login': (_) => login(), // Elimina 'const' aquí
-        'home': (_) => const home(),
-        'inicio': (_) => HomePage(),
-        'loading': (_) => LoadingScreen(), // Agrega esta línea
-        'loadinglogin': (_) => LoadingScreen(),
-        'calendar': (_) => Calendar(),
-        'crear': (_) => CrearPage(),
+        'VerHorarios': (_) => const VerHorarios(),
+        'CrearHorario': (_) => const CrearHorario(),
+        'inicio': (_) => const HomePage(),
+        'loading': (_) => const LoadingScreen(), // Agrega esta línea
+        'loadinglogin': (_) => const LoadingScreen(),
+        'calendar': (_) => const Calendar(),
+        'crear': (_) => const CrearPage(),
       },
       initialRoute: 'loading',
     );
@@ -36,6 +39,8 @@ class MyApp extends StatelessWidget {
 }
 
 class LoadingScreen extends StatefulWidget {
+  const LoadingScreen({super.key});
+
   @override
   _LoadingScreenState createState() => _LoadingScreenState();
 }
@@ -52,7 +57,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
     bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
     // Simula una pausa para mostrar el logo
-    await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 2));
 
     Navigator.pushReplacementNamed(context, isLoggedIn ? 'inicio' : 'login');
   }
@@ -69,8 +74,8 @@ class _LoadingScreenState extends State<LoadingScreen> {
               width: 150, // Ancho deseado del logo
               height: 150, // Alto deseado del logo
             ),
-            SizedBox(height: 20), // Espacio entre el logo y el CircularProgressIndicator
-            CircularProgressIndicator(),
+            const SizedBox(height: 20), // Espacio entre el logo y el CircularProgressIndicator
+            const CircularProgressIndicator(),
           ],
         ),
       ),

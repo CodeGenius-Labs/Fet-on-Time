@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class EliminarPage extends StatefulWidget {
   final int idClase;
-  EliminarPage({required this.idClase});
+  const EliminarPage({super.key, required this.idClase});
   @override
   _EliminarPageState createState() => _EliminarPageState();
 }
@@ -40,15 +40,15 @@ class _EliminarPageState extends State<EliminarPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Eliminar Clase'),
-        backgroundColor: Color.fromARGB(255, 40, 140, 1), // Cambia el color del AppBar
+        title: const Text('Eliminar Clase'),
+        backgroundColor: const Color.fromARGB(255, 40, 140, 1), // Cambia el color del AppBar
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Text('¿Está seguro de que desea eliminar esta clase?'),
-            SizedBox(height: 20),
+            const Text('¿Está seguro de que desea eliminar esta clase?'),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
                 if (_connection != null) {
@@ -64,7 +64,7 @@ class _EliminarPageState extends State<EliminarPage> {
                         await SharedPreferences.getInstance();
                     prefs.setString('status', 'calendar');
                     // Muestra un SnackBar para indicar que la clase se eliminó correctamente
-                    final snackBar = SnackBar(
+                    const snackBar = SnackBar(
                       content: Text('La clase se eliminó correctamente.'),
                     );
 
@@ -79,7 +79,7 @@ class _EliminarPageState extends State<EliminarPage> {
                   }
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
+                    const SnackBar(
                       content: Text('Error en la conexion, vuelve a intentarlo.'),
                     ),
                   );
@@ -87,9 +87,9 @@ class _EliminarPageState extends State<EliminarPage> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color.fromARGB(255, 40, 140, 1), // Cambia el color del botón
+                backgroundColor: const Color.fromARGB(255, 40, 140, 1), // Cambia el color del botón
               ),
-              child: Text('Eliminar Clase'),
+              child: const Text('Eliminar Clase'),
             ),
           ],
         ),

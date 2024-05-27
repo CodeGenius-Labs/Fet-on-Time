@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mysql1/mysql1.dart';
 import '../base_conection.dart';
-import 'package:intl/intl.dart';
 
 class CrearPage extends StatefulWidget {
+  const CrearPage({super.key});
+
   @override
   _CrearPageState createState() => _CrearPageState();
 }
@@ -17,9 +18,11 @@ class _CrearPageState extends State<CrearPage> {
   String selectedJornada = 'diurna';
   List<String> condiciones = [];
   int selectedMateriasId = -1;
+  String nombreMateria = '';
   int materiaCreditos = -1;
   List<DropdownMenuItem<Materias>> materiasDropdown = [];
   int selectedDocenteId = -1;
+  String nombreDocente = '';
   List<DropdownMenuItem<Docente>> docentesDropdown = [];
   List<String> jornadaOptions = ['diurna', 'nocturna']; // Opciones de jornada
   List<String> customDiasJornadas = []; //listado donde guarda las condiciones de los docentes
@@ -95,7 +98,7 @@ class _CrearPageState extends State<CrearPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Agregar Días y Jornadas'),
+          title: const Text('Agregar Días y Jornadas'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -120,7 +123,7 @@ class _CrearPageState extends State<CrearPage> {
                     nuevoDia = value!;
                   });
                 },
-                hint: Text('Selecciona un día'),
+                hint: const Text('Selecciona un día'),
               ),
               DropdownButton<String>(
                 value: nuevaJornada,
@@ -135,7 +138,7 @@ class _CrearPageState extends State<CrearPage> {
                     nuevaJornada = value!;
                   });
                 },
-                hint: Text('Selecciona una jornada'),
+                hint: const Text('Selecciona una jornada'),
               ),
             ],
           ),
@@ -152,7 +155,7 @@ class _CrearPageState extends State<CrearPage> {
                   Navigator.pop(context);
                 }
               },
-              child: Text('Guardar'),
+              child: const Text('Guardar'),
             ),
           ],
         );
@@ -166,14 +169,14 @@ class _CrearPageState extends State<CrearPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Crear Clase'),
+        title: const Text('Crear Clase'),
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             Padding(
-              padding: EdgeInsets.symmetric(
+              padding: const EdgeInsets.symmetric(
                 vertical: 8.0,
               ),
               child: DropdownButton<Materias>(
@@ -188,13 +191,14 @@ class _CrearPageState extends State<CrearPage> {
                   setState(() {
                     selectedMateriasId = materia!.id;
                     materiaCreditos = materia.creditos;
+                    nombreMateria = materia.nombre;
                   });
                 },
-                hint: Text('Seleccione una Materia'),
+                hint: const Text('Seleccione una Materia'),
               ),
             ),
             Padding(
-              padding: EdgeInsets.symmetric(
+              padding: const EdgeInsets.symmetric(
                 vertical: 8.0,
               ),
               child: DropdownButton<Docente>(
@@ -208,13 +212,14 @@ class _CrearPageState extends State<CrearPage> {
                 onChanged: (docente) {
                   setState(() {
                     selectedDocenteId = docente!.id;
+                    nombreDocente = docente.nombre;
                   });
                 },
-                hint: Text('Seleccione un Docente'),
+                hint: const Text('Seleccione un Docente'),
               ),
             ),
             TextField(
-              decoration: InputDecoration(labelText: 'Cantidad de estudiantes'),
+              decoration: const InputDecoration(labelText: 'Cantidad de estudiantes'),
               keyboardType: TextInputType.number,
               onChanged: (value) {
                 setState(() {
@@ -223,12 +228,12 @@ class _CrearPageState extends State<CrearPage> {
               },
             ),
 
-            Padding(
+            const Padding(
               padding: EdgeInsets.only(top: 8.0), // Espaciado solo en la parte superior
               child: Text('Selecciona una jornada:'),
             ),
             Padding(
-              padding: EdgeInsets.symmetric(
+              padding: const EdgeInsets.symmetric(
                 vertical: 1.0,
               ),
               child: DropdownButton<String>(
@@ -246,21 +251,21 @@ class _CrearPageState extends State<CrearPage> {
                 },
               ),
             ),
-            Text('Condiciones de tiempo:'),
+            const Text('Condiciones de tiempo:'),
             ElevatedButton(
               onPressed: () {
                 _openAgregarDiasJornadasDialog(context); // Llama a la función para abrir el diálogo
               },
-              child: Text('Condiciones Docentes'),
+              child: const Text('Condiciones Docentes'),
             ),
 
             // Agrega más CheckboxListTile para otras condiciones de tiempo
-            SizedBox(height: 16.0),
+            const SizedBox(height: 16.0),
             ElevatedButton(
               onPressed: () {
                 _guardarClase();
               },
-              child: Text('Guardar Clase'),
+              child: const Text('Guardar Clase'),
             ),
           ],
         ),
@@ -274,7 +279,7 @@ class _CrearPageState extends State<CrearPage> {
       // Mostrar un mensaje de error o realizar alguna acción apropiada
       // Puedes utilizar un ScaffoldMessenger para mostrar un SnackBar con el mensaje de error
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Por favor, selecciona una materia, un docente y especifica la cantidad de estudiantes.'),
         ),
       );
@@ -284,80 +289,75 @@ class _CrearPageState extends State<CrearPage> {
    //-------------------------------INICIO LOGICA--------------------------------------------
     /*final salonId = salon['idSalon'];
     final salonNombre = salon['nombre_salon'];*/
-
+    print("INICIO LOGICA");
     final libre = await seleccionarDiaYHorasDisponibles(selectedJornada, estudiantes, materiaCreditos);
-    final diaDisp = libre['diaDisponible'];
-    final hora_inicio = libre['horaInicioDisponible'];
-    final hora_final = libre['horaFinDisponible'];
     final salonNombre = libre['nombre_completo'];
     final idSalon = libre['idSalon'];
+    final creditoMateria = materiaCreditos;
     print('''
+        semestre: $semestre
+        Credito: $creditoMateria
+        Nombre Materia: $nombreMateria
+        Cantidad estudiantes: $estudiantes
+        Docente: $nombreDocente
         salon: $idSalon $salonNombre
-        dia: $diaDisp
-        hora inicial: $hora_inicio
-        hora final: $hora_final
+        jornada: $selectedJornada
     ''');
-    final horaInicioStr = '${hora_inicio.hour}:${hora_inicio.minute}';
-    final horaFinStr = '${hora_final.hour}:${hora_final.minute}';
 
 
 
 
     //-----------------------------------FINAL LOGICA----------------------------------------
     // Ejemplo de cómo insertar datos en la base de datos utilizando el paquete mysql1:
-    try {
+    /*try {
       print('INSERT INTO clases(idmaterias, idDocentes, idSalones, semestre, idfecha_clase, hora_inicial, hora_final, programa, jornada) VALUES ($selectedMateriasId, $selectedDocenteId, $idSalon, $semestre, $diaDisp, $horaInicioStr, $horaFinStr, $directorType, $selectedJornada)');
       final result = await _connection!.query(
         'INSERT INTO clases(idmaterias, idDocentes, idSalones, semestre, idfecha_clase, hora_inicial, hora_final, programa, jornada) VALUES (?,?,?,?,?,?,?,?,?)',
         [selectedMateriasId, selectedDocenteId, idSalon, semestre, diaDisp, horaInicioStr, horaFinStr, directorType, selectedJornada],
       );
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Clase guardada exitosamente.'),
         ),
       );
       Navigator.of(context).pop();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Ocurrió un error al guardar la clase. Por favor, inténtalo de nuevo.'),
         ),
       );
       // Manejar cualquier error que pueda ocurrir durante la eliminación
       print('Error al crear la clase: $e');
       // Puedes mostrar un mensaje de error al usuario si es necesario
-    }
+    }*/
   }
 
   Future<Map<String, dynamic>> seleccionarDiaYHorasDisponibles(String jornada, int capacidadRequerida, int materiaCreditos) async {
     // Realiza una consulta en la base de datos para obtener los salones aptos
-    final horaInicio1 = TimeOfDay(hour: 7, minute: 50);
-    final horaFin1 = TimeOfDay(hour: 8, minute: 40);
-    final horaInicio2 = TimeOfDay(hour: 8, minute: 40);
-    final horaFin2 = TimeOfDay(hour: 9, minute: 30);
-    final horaInicio3 = TimeOfDay(hour: 10, minute: 00);
-    final horaFin3 = TimeOfDay(hour: 10, minute: 50);
-    final horaInicio4 = TimeOfDay(hour: 10, minute: 50);
-    final horaFin4 = TimeOfDay(hour: 11, minute: 40);
+    /*const horaInicio1 = TimeOfDay(hour: 7, minute: 50);
+    const horaFin1 = TimeOfDay(hour: 8, minute: 40);
+    const horaInicio2 = TimeOfDay(hour: 8, minute: 40);
+    const horaFin2 = TimeOfDay(hour: 9, minute: 30);
+    const horaInicio3 = TimeOfDay(hour: 10, minute: 00);
+    const horaFin3 = TimeOfDay(hour: 10, minute: 50);
+    const horaInicio4 = TimeOfDay(hour: 10, minute: 50);
+    const horaFin4 = TimeOfDay(hour: 11, minute: 40);
 
-    final horaInicio5 = TimeOfDay(hour: 18, minute: 30);
-    final horaFin5 = TimeOfDay(hour: 19, minute: 20);
-    final horaInicio6 = TimeOfDay(hour: 19, minute: 20);
-    final horaFin6 = TimeOfDay(hour: 20, minute: 10);
-    final horaInicio7 = TimeOfDay(hour: 20, minute: 30);
-    final horaFin7 = TimeOfDay(hour: 21, minute: 20);
-    final horaInicio8 = TimeOfDay(hour: 21, minute: 20);
-    final horaFin8 = TimeOfDay(hour: 22, minute: 10);
+    const horaInicio5 = TimeOfDay(hour: 18, minute: 30);
+    const horaFin5 = TimeOfDay(hour: 19, minute: 20);
+    const horaInicio6 = TimeOfDay(hour: 19, minute: 20);
+    const horaFin6 = TimeOfDay(hour: 20, minute: 10);
+    const horaInicio7 = TimeOfDay(hour: 20, minute: 30);
+    const horaFin7 = TimeOfDay(hour: 21, minute: 20);
+    const horaInicio8 = TimeOfDay(hour: 21, minute: 20);
+    const horaFin8 = TimeOfDay(hour: 22, minute: 10);*/
 
-    String diaDisponible = '';
     String nombrecompleto = '';
     int idSalon = -1;
     int selectedSalonIndex = 0;
-    TimeOfDay horaInicioDisponible = horaInicio1;
-    TimeOfDay horaFinDisponible = horaFin1;
-    int creditos = materiaCreditos;
 
-
+    print('Inicio seleccionar salon');
     final results = await _connection!.query(
       'SELECT CONCAT(bloque, " ", aula) AS nombre_completo, idSalones FROM salones WHERE sillas >= ? ORDER BY sillas ASC',
       [capacidadRequerida],
@@ -369,16 +369,7 @@ class _CrearPageState extends State<CrearPage> {
         final salonSeleccionado = resultList[selectedSalonIndex];
         idSalon = salonSeleccionado['idSalones'];
         nombrecompleto = salonSeleccionado['nombre_completo'];
-
-        // Retorna la ID y el nombre del salón seleccionado
-        /*return {
-        'idSalon': salonSeleccionado['idSalones'],
-        'nombre_salon': salonSeleccionado['nombre_completo'],
-      };*/
-
-        int timeOfDayToMinutes(TimeOfDay time) {
-          return time.hour * 60 + time.minute;
-        }
+        print('idsalon: $idSalon nombre: $nombrecompleto');
 
         final clasesEnBaseDeDatos = await getHorariosOcupados();
         final clasesEnSalon = clasesEnBaseDeDatos.where((clase) => clase.jornada == jornada).toList();
@@ -386,287 +377,22 @@ class _CrearPageState extends State<CrearPage> {
 
 
         final diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+        selectedSalonIndex = resultList.length + 1;
 
+        print('selectindex: $selectedSalonIndex result: ${resultList.length}');
 
-        while(creditos > 0){
-          for (final dia in diasSemana) {
-            final clasesEnDia = clasesEnJornada.where((clase) => clase.fechaClase.toLowerCase() == dia).toList();
-            print('creditos: $creditos');
-            if (clasesEnDia.isEmpty) {
-              print("empty");
-              if (jornada == "diurna"){
-                if(creditos == 2){
-                  diaDisponible = dia;
-                  horaInicioDisponible = horaInicio1;
-                  horaFinDisponible = horaFin2;
-                  creditos -= 2;
-                  break;  // Puedes detener la iteración si se encuentra un día libree
-                } else if(creditos == 1) {
-                  diaDisponible = dia;
-                  horaInicioDisponible = horaInicio1;
-                  horaFinDisponible = horaFin1;
-                  creditos--;
-                  break;  // Puedes detener la iteración si se encuentra un día libree
-                } else {
-                  break;
-                }
-              } else {
-                if(creditos == 2){
-                  diaDisponible = dia;
-                  horaInicioDisponible = horaInicio5;
-                  horaFinDisponible = horaFin6;
-                  creditos -= 2;
-                  break;  // Puedes detener la iteración si se encuentra un día libree
-                } else if(creditos == 1) {
-                  diaDisponible = dia;
-                  horaInicioDisponible = horaInicio5;
-                  horaFinDisponible = horaFin5;
-                  creditos--;
-                  break;  // Puedes detener la iteración si se encuentra un día libree
-                } else {
-                  break;
-                }
-              }
-
-            } else {
-              clasesEnDia.sort((a, b) => timeOfDayToMinutes(a.horaInicial).compareTo(timeOfDayToMinutes(b.horaInicial)));
-              print('''
-                CLASE FINAL
-                jornada: ${clasesEnDia.last.jornada}
-                dia: ${clasesEnDia.last.fechaClase}
-                inicial: ${clasesEnDia.last.horaInicial}
-                final: ${clasesEnDia.last.horaFinal}
-                -------------------------------------------
-                CLASE INICIAL
-                jornada: ${clasesEnDia.first.jornada}
-                dia: ${clasesEnDia.first.fechaClase}
-                inicial: ${clasesEnDia.first.horaInicial}
-                final: ${clasesEnDia.first.horaFinal}
-              ''');
-
-              if (clasesEnDia.last.jornada == "diurna"){
-                if (timeOfDayToMinutes(clasesEnDia.last.horaInicial) > timeOfDayToMinutes(horaInicio1)){
-                  if (timeOfDayToMinutes(clasesEnDia.last.horaInicial) > timeOfDayToMinutes(horaInicio2)){
-                    if (timeOfDayToMinutes(clasesEnDia.last.horaInicial) > timeOfDayToMinutes(horaInicio3)){
-
-                    } else{
-                      print("3");
-                      if (creditos == 2){
-                        print("3.1");
-                      } else{
-                        if (timeOfDayToMinutes(clasesEnDia.first.horaFinal) < timeOfDayToMinutes(horaInicio3) && timeOfDayToMinutes(clasesEnDia.last.horaInicial) > timeOfDayToMinutes(horaInicio3)){
-                          print("3.1.1");
-                        }else if (timeOfDayToMinutes(clasesEnDia.first.horaFinal) < timeOfDayToMinutes(horaInicio3)){
-                          if(timeOfDayToMinutes(clasesEnDia.last.horaInicial) >= timeOfDayToMinutes(horaInicio3) && timeOfDayToMinutes(clasesEnDia.last.horaFinal) <= timeOfDayToMinutes(horaFin3)){
-                            print("3.1.2.1");
-                            diaDisponible = dia;
-                            horaInicioDisponible = horaInicio4;
-                            horaFinDisponible = horaFin4;
-                            creditos--;
-                            break;
-                          } else {
-                            print("3.1.2.2");
-                          }
-                          /*diaDisponible = dia;
-                          horaInicioDisponible = horaInicio4;
-                          horaFinDisponible = horaFin4;
-                          creditos--;
-                          break;*/
-                        } else {
-                          print("3.1.3");
-                          diaDisponible = dia;
-                          horaInicioDisponible = horaInicio4;
-                          horaFinDisponible = horaFin4;
-                          creditos--;
-                        }
-                      }
-                    }
-                  } else {
-                    print("2");
-                    if(creditos == 2){
-                      print("2.1");
-                      diaDisponible = dia;
-                      horaInicioDisponible = horaInicio3;
-                      horaFinDisponible = horaFin4;
-                      creditos -= 2;
-                      break;
-                    } else if(creditos == 1){
-                      print("2.2");
-                      diaDisponible = dia;
-                      horaInicioDisponible = horaInicio3;
-                      horaFinDisponible = horaFin3;
-                      creditos--;
-                      break;
-                    } else {
-                      break;
-                    }
-
-                  }
-                } else {
-                  print("1");
-                  if(timeOfDayToMinutes(clasesEnDia.last.horaFinal) > timeOfDayToMinutes(horaFin1)) {
-                    if (creditos == 2){
-                      print("1.1.1");
-                      diaDisponible = dia;
-                      horaInicioDisponible = horaInicio3;
-                      horaFinDisponible = horaFin4;
-                      creditos -= 2;
-                      break;
-                    } else{
-                      print("1.1.2");
-                      diaDisponible = dia;
-                      horaInicioDisponible = horaInicio3;
-                      horaFinDisponible = horaFin3;
-                      creditos--;
-                      break;
-                    }
-                  } else {
-                    if (creditos == 2){
-                      print("1.2.1");
-                      diaDisponible = dia;
-                      horaInicioDisponible = horaInicio3;
-                      horaFinDisponible = horaFin4;
-                      creditos -= 2;
-                      break;
-                    } else{
-                      print("1.2.2");
-                      diaDisponible = dia;
-                      horaInicioDisponible = horaInicio2;
-                      horaFinDisponible = horaFin2;
-                      creditos--;
-                      break;
-                    }
-                  }
-                }
-              } else{
-                if (timeOfDayToMinutes(clasesEnDia.last.horaInicial) > timeOfDayToMinutes(horaInicio5)){
-                  if (timeOfDayToMinutes(clasesEnDia.last.horaInicial) > timeOfDayToMinutes(horaInicio6)){
-                    if (timeOfDayToMinutes(clasesEnDia.last.horaInicial) > timeOfDayToMinutes(horaInicio7)){
-
-                    } else{
-                      print("4");
-                      if (creditos == 2){
-                        print("4.1");
-                      } else{
-                        diaDisponible = dia;
-                        horaInicioDisponible = horaInicio8;
-                        horaFinDisponible = horaFin8;
-                        creditos--;
-                        break;
-                      }
-                    }
-                  } else {
-                    print("5");
-                    if(creditos == 2){
-                      print("5.1");
-                      diaDisponible = dia;
-                      horaInicioDisponible = horaInicio7;
-                      horaFinDisponible = horaFin8;
-                      creditos -= 2;
-                      break;
-                    } else if(creditos == 1){
-                      print("5.2");
-                      diaDisponible = dia;
-                      horaInicioDisponible = horaInicio7;
-                      horaFinDisponible = horaFin7;
-                      creditos--;
-                      break;
-                    } else {
-                      break;
-                    }
-
-                  }
-                } else {
-                  print("6");
-                  if(timeOfDayToMinutes(clasesEnDia.last.horaFinal) > timeOfDayToMinutes(horaFin5)) {
-                    if (creditos == 2){
-                      print("6.1.1");
-                      diaDisponible = dia;
-                      horaInicioDisponible = horaInicio7;
-                      horaFinDisponible = horaFin8;
-                      creditos -= 2;
-                      break;
-                    } else{
-                      print("6.1.2");
-                      diaDisponible = dia;
-                      horaInicioDisponible = horaInicio7;
-                      horaFinDisponible = horaFin7;
-                      creditos--;
-                      break;
-                    }
-                  } else {
-                    if (creditos == 2){
-                      print("6.2.1");
-                      diaDisponible = dia;
-                      horaInicioDisponible = horaInicio7;
-                      horaFinDisponible = horaFin8;
-                      creditos -= 2;
-                      break;
-                    } else{
-                      print("6.2.2");
-                      diaDisponible = dia;
-                      horaInicioDisponible = horaInicio6;
-                      horaFinDisponible = horaFin6;
-                      creditos--;
-                      break;
-                    }
-                  }
-                }
-              }
-
-
-
-            }
-            print(dia);
-          }
-        }
-        if (diaDisponible.isEmpty) {
-          selectedSalonIndex++;
-          // Si ya no hay más salones, termina el bucle
-          if (selectedSalonIndex >= resultList.length) {
-            break;
-          }
-        } else {
-          // Si se encontró un día libre, sal del bucle while
-          break;
-        }
       }
     } else {
       // No se encontraron salones aptos, puedes devolver un valor por defecto o lanzar una excepción
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('No se encontraron salones con capacidad suficiente.'),
         ),
       );
       throw Exception('No se encontraron salones con capacidad suficiente.');
     }
-    int idfecha_clase; // Variable para almacenar el valor de idfecha_clase
-
-    if (diaDisponible == "lunes") {
-      idfecha_clase = 1;
-    } else if (diaDisponible == "martes") {
-      idfecha_clase = 2;
-    } else if (diaDisponible == "miercoles") {
-      idfecha_clase = 3;
-    } else if (diaDisponible == "jueves") {
-      idfecha_clase = 4;
-    } else if (diaDisponible == "viernes") {
-      idfecha_clase = 5;
-    } else if (diaDisponible == "sabado") {
-      idfecha_clase = 6;
-    } else if (diaDisponible == "domingo") {
-      idfecha_clase = 7;
-    } else {
-      // Si diaDisponible no coincide con ningún día, puedes asignar un valor predeterminado o mostrar un mensaje de error
-      idfecha_clase = -1; // Valor predeterminado o cualquier otro valor adecuado
-      print("Día no válido"); // Mensaje de error
-    }
 
     return {
-
-      'diaDisponible': idfecha_clase,
-      'horaInicioDisponible': horaInicioDisponible,
-      'horaFinDisponible': horaFinDisponible,
       'nombre_completo': nombrecompleto,
       'idSalon': idSalon,
     };
@@ -680,7 +406,7 @@ class _CrearPageState extends State<CrearPage> {
 
 
   Future<List<Materias>> _fetchMaterias() async {
-    final results = await _connection!.query('SELECT id, Nombre, creditos FROM materias');
+    final results = await _connection!.query('SELECT id, Nombre, creditos FROM materias WHERE Semestre = ?',[semestre]);
 
     if (results.isNotEmpty) {
       return results

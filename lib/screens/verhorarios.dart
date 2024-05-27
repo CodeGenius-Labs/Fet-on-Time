@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class home extends StatelessWidget {
-  const home({super.key});
+class VerHorarios extends StatelessWidget {
+  const VerHorarios({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,7 @@ class home extends StatelessWidget {
 
           return Scaffold(
             appBar: AppBar(
-              backgroundColor: Color.fromARGB(255, 40, 140, 1),
+              backgroundColor: const Color.fromARGB(255, 40, 140, 1),
               toolbarHeight: 120,
               automaticallyImplyLeading: false,
               title: Row(
@@ -67,8 +67,8 @@ class home extends StatelessWidget {
                                   'semestreType', '$semesterNumber');
                             },
                             style: ElevatedButton.styleFrom(
-                              primary: Colors.green,
-                              padding: EdgeInsets.symmetric(
+                              backgroundColor: Colors.green,
+                              padding: const EdgeInsets.symmetric(
                                 vertical: 20,
                                 horizontal: 30,
                               ),
@@ -82,7 +82,7 @@ class home extends StatelessWidget {
                             ),
                             child: Text(
                               semesterText,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 18,
                                 color: Colors.white,
                               ),
@@ -91,7 +91,7 @@ class home extends StatelessWidget {
                         );
                       }),
                       Container(
-                        margin: EdgeInsets.only(
+                        margin: const EdgeInsets.only(
                             top: 12,
                             bottom:
                                 12), // Margen en la parte superior e inferior
@@ -101,7 +101,7 @@ class home extends StatelessWidget {
                                 context); // Esto te llevará a la página anterior
                           },
                           style: ElevatedButton.styleFrom(
-                            primary: Colors.green,
+                            backgroundColor: Colors.green,
                             padding: const EdgeInsets.symmetric(
                                 vertical: 18, horizontal: 10),
                           ),

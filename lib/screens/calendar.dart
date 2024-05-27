@@ -1,14 +1,14 @@
-import 'package:fetontime/screens/crear.dart';
-import 'package:fetontime/screens/editar.dart';
-import 'eliminar.dart';
-import '../base_conection.dart'; // Asegúrate de que la ruta sea la correcta
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:table_calendar/table_calendar.dart';
+import 'dart:core';
+import 'package:flutter_week_view/flutter_week_view.dart';
 import 'package:mysql1/mysql1.dart'; // Importa la librería mysql1
+import 'package:shared_preferences/shared_preferences.dart';
+import '../base_conection.dart'; // Asegúrate de que la ruta sea la correcta
 import 'package:intl/intl.dart';
 
 class Calendar extends StatefulWidget {
+  const Calendar({Key? key}) : super(key: key);
+
   @override
   _CalendarState createState() => _CalendarState();
 }
@@ -16,11 +16,9 @@ class Calendar extends StatefulWidget {
 class _CalendarState extends State<Calendar> {
   String semestre = '';
   String directorType = ''; // Declaración de la variable directorType
-  DateTime today = DateTime.now();
-  DateTime? _selectedDay;
-  bool _mounted = false;
-  late ValueNotifier<List<Event>> _selectedEvents;
+  String dayOfWeek = '';
   MySqlConnection? _connection; // Variable para la conexión
+  List<FlutterWeekViewEvent> _events = [];
 
   @override
   void initState() {
@@ -36,294 +34,176 @@ class _CalendarState extends State<Calendar> {
         directorType = value;
       });
     });
-    _selectedEvents = ValueNotifier(_getEventsForDay(today));
 
     // Obtén la conexión a la base de datos desde el archivo de conexión
     getConnection().then((connection) {
       setState(() {
         _connection = connection;
       });
-    });
-    _mounted = true;
-  }
-
-  @override
-  void dispose() {
-    _mounted = false;
-    _selectedEvents.dispose();
-    _connection?.close();
-    super.dispose();
-  }
-
-  Future<String> obtenerSemestreType() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String semestreType = prefs.getString('semestreType') ?? '';
-    return semestreType;
-  }
-
-  Future<void> _updateEvents() async {
-    if (_selectedDay != null && directorType.isNotEmpty && _connection != null) {
-      final dayOfWeek = DateFormat('EEEE', 'es_ES').format(_selectedDay!).toLowerCase();
-      final filteredEvents = await fetchFilteredEventsFromDatabase(dayOfWeek, directorType);
-
-      if (_mounted) {
+      dayOfWeek = DateFormat('EEEE', 'es_ES').format(DateTime.now());
+      // Llama a fetchWeekViewEventsFromDatabase para cargar los eventos desde la base de datos
+      fetchWeekViewEventsFromDatabase(
+        dayOfWeek, // Obtener el nombre del día de hoy
+        directorType,
+      ).then((events) {
         setState(() {
-          events[_selectedDay!] = filteredEvents;
+          _events = events;
         });
-      }
-    }
+      });
+    });
   }
 
-  Future<List<Event>> fetchFilteredEventsFromDatabase(
+  Future<List<FlutterWeekViewEvent>> fetchWeekViewEventsFromDatabase(
       String dayOfWeek, String directorType) async {
+    print(dayOfWeek.runtimeType);
+    print(directorType.runtimeType);
     try {
       final results = await _connection!.query(
         'SELECT c.idClases AS id_clase, m.nombre AS nombre_clase, c.jornada AS jornada, d.Nombre AS nombre_docente, '
-            'CONCAT(s.bloque, "-", s.aula) AS ubicacion_salon,'
-            'CONCAT(c.hora_inicial, "-", c.hora_final) AS hora_clase FROM clases c '
+            'CONCAT(s.bloque, "-", s.aula) AS ubicacion_salon, fc.dias AS dias, '
+            'c.hora_inicial AS hora_inicial, c.hora_final AS hora_final FROM clases c '
             'INNER JOIN docentes d ON c.idDocentes = d.idDocentes '
             'INNER JOIN materias m ON c.idmaterias = m.id '
             'INNER JOIN salones s ON c.idSalones = s.idSalones '
             'INNER JOIN fecha_clase fc ON c.idfecha_clase = fc.idfecha_clase '
-            'WHERE fc.dias = ? AND c.programa = ? AND c.semestre = ? '
-            'ORDER BY c.hora_inicial', // Agrega esta línea para ordenar por hora_inicial
-        [dayOfWeek, directorType, semestre],
+            'WHERE c.programa =? AND c.semestre =? '
+            'ORDER BY c.hora_inicial',
+        [directorType, semestre],
       );
 
-
-      final events = <Event>[];
+      final events = <FlutterWeekViewEvent>[];
       for (var row in results) {
-        events.add(Event(
-          row['nombre_clase'],
-          row['jornada'],
-          row['nombre_docente'],
-          row['ubicacion_salon'],
-          row['hora_clase'],
-          row['id_clase'],
-        ));
+        // Obtener hora de inicio y finalización de la clase
+        //print("FOR= " + row['hora_inicial'].toString() + " - " + row['hora_final'].toString());
+        //print("fecha clase: " + row['dias']);
+        // Obtener hora de inicio y finalización de la clase
+        String startTimeString = row['hora_inicial'].toString();
+        String endTimeString = row['hora_final'].toString();
+        String dias = row['dias'].toString();
+
+        // Convertir las cadenas de hora a objetos DateTime
+        List<String> startTimeParts = startTimeString.split(':');
+        List<String> endTimeParts = endTimeString.split(':');
+        int startHour = int.parse(startTimeParts[0]);
+        int startMinute = int.parse(startTimeParts[1]);
+        int endHour = int.parse(endTimeParts[0]);
+        int endMinute = int.parse(endTimeParts[1]);
+        DateTime now = _getWeekdayDate(dias);
+        DateTime startTime = DateTime(now.year, now.month, now.day, startHour, startMinute);
+        DateTime endTime = DateTime(now.year, now.month, now.day, endHour, endMinute);
+        print(startHour);
+        print(startMinute);
+        //print(startTime);
+
+        // Crear un evento FlutterWeekViewEvent
+        events.add(
+          FlutterWeekViewEvent(
+            title: row['nombre_clase'],
+            description: '${row['nombre_docente']}, ${row['ubicacion_salon']}',
+            start: startTime,
+            end: endTime,
+          ),
+        );
       }
+      events.forEach((event) {
+        print('Título: ${event.title}');
+        print('Descripción: ${event.description}');
+        print('Hora de inicio: ${event.start}');
+        print('Hora de fin: ${event.end}');
+      });
 
       return events;
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('Error en la búsqueda en la base de datos: $e');
+      print('Tipo de error: ${e.runtimeType}');
+      print('Stack trace: $stackTrace');
       return [];
     }
   }
+  DateTime _getWeekdayDate(String targetDay) {
+    DateTime now = DateTime.now();
+    List<String> weekDays = [
+      'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'
+    ];
 
-  Map<DateTime, List<Event>> events = {};
+    int currentDayIndex = weekDays.indexOf(DateFormat('EEEE', 'es').format(now).toLowerCase());
+    int targetDayIndex = weekDays.indexOf(targetDay.toLowerCase());
 
-  void _onDaySelected(DateTime day, DateTime focusedDay) {
-    setState(() {
-      today = day;
-      _selectedDay = day;
-      _selectedEvents.value = _getEventsForDay(_selectedDay!);
-    });
-    _updateEvents(); // Actualiza los eventos al seleccionar un día
+    if (targetDayIndex == -1) {
+      throw Exception('Día de la semana no válido: $targetDay');
+    }
+
+    int difference = targetDayIndex - currentDayIndex;
+    if (difference < 0) {
+      difference += 7; // Ensure we always get a future date within the next week
+    }
+
+    return now.add(Duration(days: difference));
   }
 
-  List<Event> _getEventsForDay(DateTime day) {
-    return events[day] ?? [];
-  }
 
-  Widget content() {
-    return Column(
-      children: [
-        Container(
-          child: TableCalendar(
-            calendarFormat: CalendarFormat.week,
-            locale: "es_ES",
-            rowHeight: 80,
-            headerStyle: const HeaderStyle(
-              formatButtonVisible: false,
-              titleCentered: true,
-            ),
-            calendarStyle: const CalendarStyle(
-                selectedDecoration: BoxDecoration(
-                    color: Color.fromRGBO(40, 140, 1, 1.0),
-                    shape: BoxShape.circle),
-                todayDecoration: BoxDecoration(
-                    color: Color.fromARGB(120, 40, 140, 1),
-                    shape: BoxShape.circle)),
-            availableGestures: AvailableGestures.all,
-            selectedDayPredicate: (day) => isSameDay(day, today),
-            focusedDay: today,
-            firstDay: DateTime.utc(2010, 10, 16),
-            lastDay: DateTime.utc(2030, 3, 14),
-            onDaySelected: _onDaySelected,
-            eventLoader: _getEventsForDay,
-          ),
-        ),
-        const SizedBox(height: 20),
-        const Text('Eventos',
-            style: TextStyle(
-              fontSize: 20, // Ajusta el tamaño de fuente según tus preferencias
-              fontWeight: FontWeight.bold, // Puedes ajustar el estilo del texto
-            )),
-        const SizedBox(height: 20),
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(1),
-            ),
-            child: ValueListenableBuilder<List<Event>>(
-              valueListenable: _selectedEvents,
-              builder: (context, selectedEvents, _) {
-                return ListView.builder(
-                  itemCount: selectedEvents.length,
-                  itemBuilder: (context, index) {
-                    return Container(
-                      margin: const EdgeInsets.symmetric(
-                          vertical: 5, horizontal: 10),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.green),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: ListTile(
-                        title: Text(selectedEvents[index].nombre_clase),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                                "Ubicación: ${selectedEvents[index].ubicacion_salon}"),
-                            Text(
-                                "Hora: ${selectedEvents[index].hora_clase.substring(0, 5)} - ${selectedEvents[index].hora_clase.substring(09, 14)}"), // Aquí se muestra el rango de horas sin los segundos
-                          ],
-                        ),
-                        onTap: () {
-                          _showEventDetails(selectedEvents[index]);
-                        },
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<String> _getDirectorType() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('directorType') ?? '';
-  }
-
-  void _showEventDetails(Event event) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(event.nombre_clase),
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text("Docente: ${event.nombre_docente}"),
-              Text("Ubicación: ${event.ubicacion_salon}"),
-              Text(
-                  "Hora: ${event.hora_clase.substring(0, 5)} - ${event.hora_clase.substring(09, 14)}"),
-              Text("Jornada: ${event.jornada}")
-            ],
-          ),
-          actions: [
-            ButtonBar(
-              alignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: () async {
-                    Navigator.of(context).pop();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => EditarPage(
-                                idClase: event.id_clase,
-                              )),
-                    );
-                    SharedPreferences prefs =
-                        await SharedPreferences.getInstance();
-                    prefs.setString('nombre_clase', '${event.nombre_clase}');
-                    prefs.setString('jornada', '${event.jornada}');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color.fromRGBO(40, 140, 1, 1),
-                  ),
-                  child: Text('Editar'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    Navigator.of(context).pop();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => EliminarPage(idClase: event.id_clase,)),
-                    );
-                    SharedPreferences prefs =
-                        await SharedPreferences.getInstance();
-                    prefs.setString('nombre_clase', '${event.nombre_clase}');
-                    prefs.setString('jornada', '${event.jornada}');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color.fromRGBO(40, 140, 1, 1),
-                  ),
-                  child: Text("Eliminar"),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color.fromRGBO(40, 140, 1, 1),
-                  ),
-                  child: Text("Cerrar"),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color.fromARGB(255, 40, 140, 1),
-        title: semestre.isEmpty
-            ? const CircularProgressIndicator()
-            : Text('Semestre $semestre'),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => CrearPage()),
+    return FutureBuilder<List<FlutterWeekViewEvent>>(
+      future: fetchWeekViewEventsFromDatabase(dayOfWeek, directorType),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else {
+          List<FlutterWeekViewEvent> events = snapshot.data!;
+          // Obtiene la fecha actual
+          DateTime now = DateTime.now();
+          DateTime date = DateTime(now.year, now.month, now.day);
+          // Encuentra el lunes de esta semana
+          //DateTime mondayThisWeek = now.subtract(Duration(days: now.weekday - 1));
+          // Lista para almacenar todas las fechas de la semana desde el lunes hasta el domingo
+          //List<DateTime> weekDates = List.generate(7, (index) => mondayThisWeek.add(Duration(days: index)));
+
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Semana'),
+            ),
+            body: WeekView(
+              dates: [
+                date,
+                for (int i = 1; i <= 6; i++)
+                  date.add(Duration(days: i))
+              ],
+              dayBarStyleBuilder: (date) {
+                return DayBarStyle(
+                  textStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  color: Colors.grey[200],
+                  dateFormatter: (year, month, day) => customDateFormatter(DateTime(year, month, day)),
+                );
+              },
+              initialTime: const HourMinute(hour: 7).atDate(DateTime.now()),
+              events: events,
+
+            ),
           );
-        },
-        backgroundColor: Color.fromRGBO(40, 140, 1, 1.0),
-        child: const Icon(Icons.add),
-      ),
-      body: content(),
+        }
+      },
     );
   }
 }
 
-class Event {
-  String nombre_clase;
-  String jornada;
-  String nombre_docente;
-  String ubicacion_salon;
-  String hora_clase;
-  int id_clase;
-
-  Event(this.nombre_clase, this.jornada, this.nombre_docente,
-      this.ubicacion_salon, this.hora_clase, this.id_clase);
+String customDateFormatter(DateTime date) {
+  // Usa DateFormat de la librería intl para obtener el nombre completo del día
+  return DateFormat('EEEE', 'es_ES').format(date); // 'es_ES' para español
 }
+
+Future<String> obtenerSemestreType() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String semestreType = prefs.getString('semestreType') ?? '';
+  return semestreType;
+}
+
+Future<String> _getDirectorType() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getString('directorType') ?? '';
+}
+
+void main() => runApp(MaterialApp(home: Calendar()));

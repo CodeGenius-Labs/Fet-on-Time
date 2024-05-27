@@ -7,7 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 // ignore: must_be_immutable
 class login extends StatelessWidget {
   String _email = ''; // Variable para almacenar el correo electrónico
-  String _password = ''; // Variable para almacenar la contraseña
+  String _password = '';
+
+  login({super.key}); // Variable para almacenar la contraseña
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +73,7 @@ class login extends StatelessWidget {
                             validator: (value) {
                               String pattern =
                                   r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
-                              RegExp regExp = new RegExp(pattern);
+                              RegExp regExp = RegExp(pattern);
                               return regExp.hasMatch(value ?? '')
                                   ? null
                                   : 'El valor ingresado no es un correo'; //no entiendo esto asi que no me pregunte xd
@@ -134,7 +136,7 @@ class login extends StatelessWidget {
                               } else {
                                 // Si no se encontró un registro, mostrar un mensaje de error
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
+                                  const SnackBar(
                                     content: Text('Correo o contraseña incorrectos.'),
                                   ),
                                 );
@@ -184,33 +186,33 @@ class login extends StatelessWidget {
         children: [
           // ignore: sort_child_properties_last
           Positioned(
-            child: burbuja(),
             top: 90,
             left: 30,
+            child: burbuja(),
           ),
           // ignore: sort_child_properties_last
           Positioned(
-            child: burbuja(),
             top: -40,
             left: -30,
+            child: burbuja(),
           ),
           // ignore: sort_child_properties_last
           Positioned(
-            child: burbuja(),
             top: -50,
             right: -20,
+            child: burbuja(),
           ),
           // ignore: sort_child_properties_last
           Positioned(
-            child: burbuja(),
             bottom: -50,
             left: -10,
+            child: burbuja(),
           ),
           // ignore: sort_child_properties_last
           Positioned(
-            child: burbuja(),
             bottom: 120,
             right: -20,
+            child: burbuja(),
           ),
         ],
       ),

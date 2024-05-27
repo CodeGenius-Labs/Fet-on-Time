@@ -20,7 +20,7 @@ String formatTimeOfDay(TimeOfDay timeOfDay) {
 
 class EditarPage extends StatefulWidget {
   final int idClase;
-  EditarPage({required this.idClase});
+  const EditarPage({super.key, required this.idClase});
   @override
   _EditarPageState createState() => _EditarPageState();
 }
@@ -42,14 +42,14 @@ List<Aula> listaDeAulas = [];
 class ListaDeAulasWidget extends StatelessWidget {
   final List<Aula> aulas;
 
-  ListaDeAulasWidget({required this.aulas});
+  const ListaDeAulasWidget({super.key, required this.aulas});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Lista de Aulas'),
-        backgroundColor: Color.fromARGB(255, 40, 140, 1), // Color de fondo verde
+        title: const Text('Lista de Aulas'),
+        backgroundColor: const Color.fromARGB(255, 40, 140, 1), // Color de fondo verde
       ),
       body: ListView.builder(
         itemCount: (aulas.length / 2).ceil(), // Redondea hacia arriba
@@ -64,7 +64,7 @@ class ListaDeAulasWidget extends StatelessWidget {
                   child: buildAulaCard(context, aulas[firstAulaIndex]),
                 ),
               ),
-              SizedBox(width: 8.0), // Espacio entre las aulas
+              const SizedBox(width: 8.0), // Espacio entre las aulas
               if (secondAulaIndex < aulas.length)
                 Expanded(
                   child: Card(
@@ -211,8 +211,8 @@ class _EditarPageState extends State<EditarPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color.fromARGB(255, 40, 140, 1),
-        title: Text('Editar Clase'),
+        backgroundColor: const Color.fromARGB(255, 40, 140, 1),
+        title: const Text('Editar Clase'),
       ),
   body: SingleChildScrollView(
     child: Padding(
@@ -220,7 +220,7 @@ class _EditarPageState extends State<EditarPage> {
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               vertical: 8.0,
             ),
             child: TextField(
@@ -236,7 +236,7 @@ class _EditarPageState extends State<EditarPage> {
             ),
           ),
             Padding(
-              padding: EdgeInsets.symmetric(
+              padding: const EdgeInsets.symmetric(
                 vertical: 8.0,
               ),
               child: Row(
@@ -245,16 +245,16 @@ class _EditarPageState extends State<EditarPage> {
                   Text('Hora Inicial: ${horaInicial.format(context)}'),
                   ElevatedButton(
                     onPressed: () => _selectHoraInicial(context),
-                    child: Text('Seleccionar Hora'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color.fromRGBO(40, 140, 1, 1.0),
+                      backgroundColor: const Color.fromRGBO(40, 140, 1, 1.0),
                     ),
+                    child: const Text('Seleccionar Hora'),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: EdgeInsets.symmetric(
+              padding: const EdgeInsets.symmetric(
                 vertical: 8.0,
               ),
               child: Row(
@@ -263,16 +263,16 @@ class _EditarPageState extends State<EditarPage> {
                   Text('Hora Final: ${horaFinal.format(context)}'),
                   ElevatedButton(
                     onPressed: () => _selectHoraFinal(context),
-                    child: Text('Seleccionar Hora'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color.fromRGBO(40, 140, 1, 1.0),
+                      backgroundColor: const Color.fromRGBO(40, 140, 1, 1.0),
                     ),
+                    child: const Text('Seleccionar Hora'),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: EdgeInsets.symmetric(
+              padding: const EdgeInsets.symmetric(
                 vertical: 8.0,
               ),
               child: DropdownButton<Docente>(
@@ -288,18 +288,18 @@ class _EditarPageState extends State<EditarPage> {
                     selectedDocenteId = docente!.id;
                   });
                 },
-                hint: Text('Seleccione un Docente'),
+                hint: const Text('Seleccione un Docente'),
               ),
             ),
           ElevatedButton(
             onPressed: _mostrarListaDeAulas,
-            child: Text('Seleccionar Salón'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color.fromRGBO(40, 140, 1, 1.0),
+              backgroundColor: const Color.fromRGBO(40, 140, 1, 1.0),
             ),
+            child: const Text('Seleccionar Salón'),
           ),
             Padding(
-              padding: EdgeInsets.symmetric(
+              padding: const EdgeInsets.symmetric(
                 vertical: 8.0,
               ),
               child: DropdownButton<FechaClase>(
@@ -315,11 +315,11 @@ class _EditarPageState extends State<EditarPage> {
                     selectedFechaClaseId = fechaClase!.id;
                   });
                 },
-                hint: Text('Seleccione una Fecha de Clase'),
+                hint: const Text('Seleccione una Fecha de Clase'),
               ),
             ),
             Padding(
-              padding: EdgeInsets.symmetric(
+              padding: const EdgeInsets.symmetric(
                 vertical: 8.0,
               ),
               child: ElevatedButton(
@@ -342,10 +342,10 @@ class _EditarPageState extends State<EditarPage> {
                   await _insertarClase(nuevoNombre, nuevoIdDocentes, nuevoIdFechaClase, nuevaHoraInicial, nuevaHoraFinal, selectedIdAula);
 
                 },
-                child: Text('Guardar Cambios'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color.fromRGBO(40, 140, 1, 1.0),
+                  backgroundColor: const Color.fromRGBO(40, 140, 1, 1.0),
                 ),
+                child: const Text('Guardar Cambios'),
               ),
             ),
           ],
@@ -375,9 +375,7 @@ class _EditarPageState extends State<EditarPage> {
       final horaFinStr = '${horaFin.hour}:${horaFin.minute}';
 
       final results = await connection.query(
-        'SELECT programa FROM clases WHERE idSalones = ? AND idfecha_clase = ? AND (' +
-            '((hora_inicial <= ? AND hora_final >= ?) OR (hora_inicial >= ? AND hora_final <= ?))' +
-            ')',
+        'SELECT programa FROM clases WHERE idSalones = ? AND idfecha_clase = ? AND (((hora_inicial <= ? AND hora_final >= ?) OR (hora_inicial >= ? AND hora_final <= ?)))',
         [
           aulaId,
           fechaClaseId,
@@ -399,7 +397,7 @@ class _EditarPageState extends State<EditarPage> {
           context: context,
           builder: (context) {
             return AlertDialog(
-              title: Text('Error'),
+              title: const Text('Error'),
               content: Text(
                 'Ya existe una clase programada en ese horario y aula. Choca con la clase:  de $programaClaseExistente',/*$nombreClaseExistente*/
               ),
@@ -408,7 +406,7 @@ class _EditarPageState extends State<EditarPage> {
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  child: Text('Aceptar'),
+                  child: const Text('Aceptar'),
                 ),
               ],
             );
@@ -440,8 +438,8 @@ class _EditarPageState extends State<EditarPage> {
           context: context,
           builder: (context) {
             return AlertDialog(
-              title: Text('Clase Guardada'),
-              content: Text(
+              title: const Text('Clase Guardada'),
+              content: const Text(
                   'La clase se ha guardado exitosamente en la base de datos.'),
               actions: <Widget>[
                 TextButton(
@@ -449,7 +447,7 @@ class _EditarPageState extends State<EditarPage> {
                     Navigator.of(context).pop();
                     Navigator.of(context).pop();
                   },
-                  child: Text('Aceptar'),
+                  child: const Text('Aceptar'),
                 ),
               ],
             );
