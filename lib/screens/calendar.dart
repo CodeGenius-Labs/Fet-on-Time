@@ -80,6 +80,7 @@ class _CalendarState extends State<Calendar> {
         String startTimeString = row['hora_inicial'].toString();
         String endTimeString = row['hora_final'].toString();
         String dias = row['dias'].toString();
+        int id_clase = row['id_clase'];
 
         // Convertir las cadenas de hora a objetos DateTime
         List<String> startTimeParts = startTimeString.split(':');
@@ -101,7 +102,7 @@ class _CalendarState extends State<Calendar> {
             title: row['nombre_clase'],
             description: '${row['nombre_docente']}, ${row['ubicacion_salon']}',
             start: startTime,
-            end: endTime,
+            end: endTime, onTap: () => _showEventDetails(context, id_clase)
           ),
         );
       }
@@ -204,6 +205,81 @@ Future<String> obtenerSemestreType() async {
 Future<String> _getDirectorType() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   return prefs.getString('directorType') ?? '';
+}
+
+void _showEventDetails(Event event) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(event.nombre_clase),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Docente: ${event.nombre_docente}"),
+            Text("Ubicación: ${event.ubicacion_salon}"),
+            Text(
+                "Hora: ${event.hora_clase.substring(0, 5)} - ${event.hora_clase.substring(09, 14)}"),
+            Text("Jornada: ${event.jornada}")
+          ],
+        ),
+        actions: [
+          ButtonBar(
+            alignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => EditarPage(
+                          idClase: event.id_clase,
+                        )),
+                  );
+                  SharedPreferences prefs =
+                  await SharedPreferences.getInstance();
+                  prefs.setString('nombre_clase', event.nombre_clase);
+                  prefs.setString('jornada', event.jornada);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromRGBO(40, 140, 1, 1),
+                ),
+                child: const Text('Editar'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => EliminarPage(idClase: event.id_clase,)),
+                  );
+                  SharedPreferences prefs =
+                  await SharedPreferences.getInstance();
+                  prefs.setString('nombre_clase', event.nombre_clase);
+                  prefs.setString('jornada', event.jornada);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromRGBO(40, 140, 1, 1),
+                ),
+                child: const Text("Eliminar"),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromRGBO(40, 140, 1, 1),
+                ),
+                child: const Text("Cerrar"),
+              ),
+            ],
+          ),
+        ],
+      );
+    },
+  );
 }
 
 void main() => runApp(MaterialApp(home: Calendar()));
