@@ -207,79 +207,57 @@ Future<String> _getDirectorType() async {
   return prefs.getString('directorType') ?? '';
 }
 
-void _showEventDetails(Event event) {
+void _showEventDetails(BuildContext context, FlutterWeekViewEvent event) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
-        title: Text(event.nombre_clase),
+        title: Text(event.title),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("Docente: ${event.nombre_docente}"),
-            Text("Ubicación: ${event.ubicacion_salon}"),
-            Text(
-                "Hora: ${event.hora_clase.substring(0, 5)} - ${event.hora_clase.substring(09, 14)}"),
-            Text("Jornada: ${event.jornada}")
+            Text("Descripción: ${event.description}"),
+            Text("Hora de inicio: ${DateFormat('HH:mm').format(event.start)}"),
+            Text("Hora de fin: ${DateFormat('HH:mm').format(event.end)}"),
           ],
         ),
         actions: [
-          ButtonBar(
-            alignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => EditarPage(
-                          idClase: event.id_clase,
-                        )),
-                  );
-                  SharedPreferences prefs =
-                  await SharedPreferences.getInstance();
-                  prefs.setString('nombre_clase', event.nombre_clase);
-                  prefs.setString('jornada', event.jornada);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromRGBO(40, 140, 1, 1),
-                ),
-                child: const Text('Editar'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => EliminarPage(idClase: event.id_clase,)),
-                  );
-                  SharedPreferences prefs =
-                  await SharedPreferences.getInstance();
-                  prefs.setString('nombre_clase', event.nombre_clase);
-                  prefs.setString('jornada', event.jornada);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromRGBO(40, 140, 1, 1),
-                ),
-                child: const Text("Eliminar"),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromRGBO(40, 140, 1, 1),
-                ),
-                child: const Text("Cerrar"),
-              ),
-            ],
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _editEvent(event);
+            },
+            child: Text('Editar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _deleteEvent(event);
+            },
+            child: Text('Eliminar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Cerrar'),
           ),
         ],
       );
     },
   );
 }
+
+void _editEvent(FlutterWeekViewEvent event) {
+  // Implementa la lógica para editar el evento aquí
+  print('Editar evento: ${event.title}');
+}
+
+void _deleteEvent(FlutterWeekViewEvent event) {
+  // Implementa la lógica para eliminar el evento aquí
+  print('Eliminar evento: ${event.title}');
+}
+
 
 void main() => runApp(MaterialApp(home: Calendar()));
