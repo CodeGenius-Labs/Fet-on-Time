@@ -1,3 +1,5 @@
+import 'package:fetontime/screens/editar.dart';
+import 'eliminar.dart';
 import 'package:flutter/material.dart';
 import 'dart:core';
 import 'package:flutter_week_view/flutter_week_view.dart';
@@ -19,6 +21,7 @@ class _CalendarState extends State<Calendar> {
   String dayOfWeek = '';
   MySqlConnection? _connection; // Variable para la conexión
   List<FlutterWeekViewEvent> _events = [];
+  bool _isLoading = true; // Variable para controlar el estado de carga
 
   @override
   void initState() {
@@ -41,22 +44,24 @@ class _CalendarState extends State<Calendar> {
         _connection = connection;
       });
       dayOfWeek = DateFormat('EEEE', 'es_ES').format(DateTime.now());
-      // Llama a fetchWeekViewEventsFromDatabase para cargar los eventos desde la base de datos
-      fetchWeekViewEventsFromDatabase(
-        dayOfWeek, // Obtener el nombre del día de hoy
-        directorType,
-      ).then((events) {
-        setState(() {
-          _events = events;
-        });
+      _loadEvents(); // Cargar eventos inicialmente
+    });
+  }
+
+  void _loadEvents() {
+    fetchWeekViewEventsFromDatabase(
+      dayOfWeek, // Obtener el nombre del día de hoy
+      directorType,
+    ).then((events) {
+      setState(() {
+        _events = events;
+        _isLoading = false; // Cambiar el estado de carga
       });
     });
   }
 
   Future<List<FlutterWeekViewEvent>> fetchWeekViewEventsFromDatabase(
       String dayOfWeek, String directorType) async {
-    print(dayOfWeek.runtimeType);
-    print(directorType.runtimeType);
     try {
       final results = await _connection!.query(
         'SELECT c.idClases AS id_clase, m.nombre AS nombre_clase, c.jornada AS jornada, d.Nombre AS nombre_docente, '
@@ -74,9 +79,6 @@ class _CalendarState extends State<Calendar> {
       final events = <FlutterWeekViewEvent>[];
       for (var row in results) {
         // Obtener hora de inicio y finalización de la clase
-        //print("FOR= " + row['hora_inicial'].toString() + " - " + row['hora_final'].toString());
-        //print("fecha clase: " + row['dias']);
-        // Obtener hora de inicio y finalización de la clase
         String startTimeString = row['hora_inicial'].toString();
         String endTimeString = row['hora_final'].toString();
         String dias = row['dias'].toString();
@@ -92,9 +94,14 @@ class _CalendarState extends State<Calendar> {
         DateTime now = _getWeekdayDate(dias);
         DateTime startTime = DateTime(now.year, now.month, now.day, startHour, startMinute);
         DateTime endTime = DateTime(now.year, now.month, now.day, endHour, endMinute);
-        print(startHour);
-        print(startMinute);
-        //print(startTime);
+        Descripcion descripcion = Descripcion(
+            id: id_clase,
+            Materia: row['nombre_clase'],
+            salon: row['ubicacion_salon'],
+            docente: row['nombre_docente'],
+            jornada: row['jornada'],
+            hora_inicial: startTime,
+            hora_final: endTime);
 
         // Crear un evento FlutterWeekViewEvent
         events.add(
@@ -102,16 +109,11 @@ class _CalendarState extends State<Calendar> {
             title: row['nombre_clase'],
             description: '${row['nombre_docente']}, ${row['ubicacion_salon']}',
             start: startTime,
-            end: endTime, onTap: () => _showEventDetails(context, id_clase)
+            end: endTime,
+            onTap: () => _showEventDetails(context, descripcion),
           ),
         );
       }
-      events.forEach((event) {
-        print('Título: ${event.title}');
-        print('Descripción: ${event.description}');
-        print('Hora de inicio: ${event.start}');
-        print('Hora de fin: ${event.end}');
-      });
 
       return events;
     } catch (e, stackTrace) {
@@ -121,6 +123,7 @@ class _CalendarState extends State<Calendar> {
       return [];
     }
   }
+
   DateTime _getWeekdayDate(String targetDay) {
     DateTime now = DateTime.now();
     List<String> weekDays = [
@@ -142,122 +145,137 @@ class _CalendarState extends State<Calendar> {
     return now.add(Duration(days: difference));
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<FlutterWeekViewEvent>>(
-      future: fetchWeekViewEventsFromDatabase(dayOfWeek, directorType),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        } else {
-          List<FlutterWeekViewEvent> events = snapshot.data!;
-          // Obtiene la fecha actual
-          DateTime now = DateTime.now();
-          DateTime date = DateTime(now.year, now.month, now.day);
-          // Encuentra el lunes de esta semana
-          //DateTime mondayThisWeek = now.subtract(Duration(days: now.weekday - 1));
-          // Lista para almacenar todas las fechas de la semana desde el lunes hasta el domingo
-          //List<DateTime> weekDates = List.generate(7, (index) => mondayThisWeek.add(Duration(days: index)));
-
-          return Scaffold(
-            appBar: AppBar(
-              title: const Text('Semana'),
-            ),
-            body: WeekView(
-              dates: [
-                date,
-                for (int i = 1; i <= 6; i++)
-                  date.add(Duration(days: i))
-              ],
-              dayBarStyleBuilder: (date) {
-                return DayBarStyle(
-                  textStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  color: Colors.grey[200],
-                  dateFormatter: (year, month, day) => customDateFormatter(DateTime(year, month, day)),
-                );
-              },
-              initialTime: const HourMinute(hour: 7).atDate(DateTime.now()),
-              events: events,
-
-            ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Semana'),
+      ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : _events.isEmpty
+          ? Center(child: Text('No hay Clases Programadas'))
+          : WeekView(
+        dates: [
+          DateTime.now(),
+          for (int i = 1; i <= 6; i++)
+            DateTime.now().add(Duration(days: i))
+        ],
+        dayBarStyleBuilder: (date) {
+          return DayBarStyle(
+            textStyle: TextStyle(
+                fontWeight: FontWeight.bold, fontSize: 16),
+            color: Colors.grey[200],
+            dateFormatter: (year, month, day) =>
+                customDateFormatter(DateTime(year, month, day)),
           );
-        }
+        },
+        initialTime:
+        const HourMinute(hour: 7).atDate(DateTime.now()),
+        events: _events,
+      ),
+    );
+  }
+
+  String customDateFormatter(DateTime date) {
+    // Usa DateFormat de la librería intl para obtener el nombre completo del día
+    return DateFormat('EEEE', 'es_ES').format(date); // 'es_ES' para español
+  }
+
+  Future<String> obtenerSemestreType() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String semestreType = prefs.getString('semestreType') ?? '';
+    return semestreType;
+  }
+
+  Future<String> _getDirectorType() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('directorType') ?? '';
+  }
+
+  void _showEventDetails(BuildContext context, Descripcion descripcion) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(descripcion.Materia),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Salon: ${descripcion.salon}"),
+              Text("Docente: ${descripcion.docente}"),
+              Text("Jornada: ${descripcion.jornada}"),
+              Text("Hora de inicio: ${DateFormat('HH:mm').format(descripcion.hora_inicial)}"),
+              Text("Hora de fin: ${DateFormat('HH:mm').format(descripcion.hora_final)}"),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => EditarPage(
+                        idClase: descripcion.id,
+                      )),
+                );
+                _loadEvents(); // Cargar eventos nuevamente al regresar
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromRGBO(40, 140, 1, 1),
+              ),
+              child: const Text('Editar'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => EliminarPage(
+                        idClase: descripcion.id,
+                      )),
+                );
+                _loadEvents(); // Cargar eventos nuevamente al regresar
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromRGBO(40, 140, 1, 1),
+              ),
+              child: const Text("Eliminar"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cerrar'),
+            ),
+          ],
+        );
       },
     );
   }
 }
 
-String customDateFormatter(DateTime date) {
-  // Usa DateFormat de la librería intl para obtener el nombre completo del día
-  return DateFormat('EEEE', 'es_ES').format(date); // 'es_ES' para español
-}
+class Descripcion {
+  int id;
+  String Materia;
+  String salon;
+  String docente;
+  String jornada;
+  DateTime hora_inicial;
+  DateTime hora_final;
 
-Future<String> obtenerSemestreType() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String semestreType = prefs.getString('semestreType') ?? '';
-  return semestreType;
+  // Constructor con parámetros nombrados y obligatorios
+  Descripcion(
+      {required this.id,
+        required this.Materia,
+        required this.salon,
+        required this.docente,
+        required this.jornada,
+        required this.hora_inicial,
+        required this.hora_final});
 }
-
-Future<String> _getDirectorType() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getString('directorType') ?? '';
-}
-
-void _showEventDetails(BuildContext context, FlutterWeekViewEvent event) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text(event.title),
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text("Descripción: ${event.description}"),
-            Text("Hora de inicio: ${DateFormat('HH:mm').format(event.start)}"),
-            Text("Hora de fin: ${DateFormat('HH:mm').format(event.end)}"),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _editEvent(event);
-            },
-            child: Text('Editar'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _deleteEvent(event);
-            },
-            child: Text('Eliminar'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('Cerrar'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-void _editEvent(FlutterWeekViewEvent event) {
-  // Implementa la lógica para editar el evento aquí
-  print('Editar evento: ${event.title}');
-}
-
-void _deleteEvent(FlutterWeekViewEvent event) {
-  // Implementa la lógica para eliminar el evento aquí
-  print('Eliminar evento: ${event.title}');
-}
-
 
 void main() => runApp(MaterialApp(home: Calendar()));
