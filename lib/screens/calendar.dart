@@ -65,14 +65,14 @@ class _CalendarState extends State<Calendar> {
     try {
       final results = await _connection!.query(
         'SELECT c.idClases AS id_clase, m.nombre AS nombre_clase, c.jornada AS jornada, d.Nombre AS nombre_docente, '
-            'CONCAT(s.bloque, "-", s.aula) AS ubicacion_salon, fc.dias AS dias, '
-            'c.hora_inicial AS hora_inicial, c.hora_final AS hora_final FROM clases c '
-            'INNER JOIN docentes d ON c.idDocentes = d.idDocentes '
-            'INNER JOIN materias m ON c.idmaterias = m.id '
-            'INNER JOIN salones s ON c.idSalones = s.idSalones '
-            'INNER JOIN fecha_clase fc ON c.idfecha_clase = fc.idfecha_clase '
-            'WHERE c.programa =? AND c.semestre =? '
-            'ORDER BY c.hora_inicial',
+        'CONCAT(s.bloque, "-", s.aula) AS ubicacion_salon, fc.dias AS dias, '
+        'c.hora_inicial AS hora_inicial, c.hora_final AS hora_final FROM clases c '
+        'INNER JOIN docentes d ON c.idDocentes = d.idDocentes '
+        'INNER JOIN materias m ON c.idmaterias = m.id '
+        'INNER JOIN salones s ON c.idSalones = s.idSalones '
+        'INNER JOIN fecha_clase fc ON c.idfecha_clase = fc.idfecha_clase '
+        'WHERE c.programa =? AND c.semestre =? '
+        'ORDER BY c.hora_inicial',
         [directorType, semestre],
       );
 
@@ -92,8 +92,10 @@ class _CalendarState extends State<Calendar> {
         int endHour = int.parse(endTimeParts[0]);
         int endMinute = int.parse(endTimeParts[1]);
         DateTime now = _getWeekdayDate(dias);
-        DateTime startTime = DateTime(now.year, now.month, now.day, startHour, startMinute);
-        DateTime endTime = DateTime(now.year, now.month, now.day, endHour, endMinute);
+        DateTime startTime =
+            DateTime(now.year, now.month, now.day, startHour, startMinute);
+        DateTime endTime =
+            DateTime(now.year, now.month, now.day, endHour, endMinute);
         Descripcion descripcion = Descripcion(
             id: id_clase,
             Materia: row['nombre_clase'],
@@ -127,10 +129,17 @@ class _CalendarState extends State<Calendar> {
   DateTime _getWeekdayDate(String targetDay) {
     DateTime now = DateTime.now();
     List<String> weekDays = [
-      'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'
+      'lunes',
+      'martes',
+      'miercoles',
+      'jueves',
+      'viernes',
+      'sábado',
+      'domingo'
     ];
 
-    int currentDayIndex = weekDays.indexOf(DateFormat('EEEE', 'es').format(now).toLowerCase());
+    int currentDayIndex =
+        weekDays.indexOf(DateFormat('EEEE', 'es').format(now).toLowerCase());
     int targetDayIndex = weekDays.indexOf(targetDay.toLowerCase());
 
     if (targetDayIndex == -1) {
@@ -139,7 +148,8 @@ class _CalendarState extends State<Calendar> {
 
     int difference = targetDayIndex - currentDayIndex;
     if (difference < 0) {
-      difference += 7; // Ensure we always get a future date within the next week
+      difference +=
+          7; // Ensure we always get a future date within the next week
     }
 
     return now.add(Duration(days: difference));
@@ -154,26 +164,25 @@ class _CalendarState extends State<Calendar> {
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : _events.isEmpty
-          ? Center(child: Text('No hay Clases Programadas'))
-          : WeekView(
-        dates: [
-          DateTime.now(),
-          for (int i = 1; i <= 6; i++)
-            DateTime.now().add(Duration(days: i))
-        ],
-        dayBarStyleBuilder: (date) {
-          return DayBarStyle(
-            textStyle: TextStyle(
-                fontWeight: FontWeight.bold, fontSize: 16),
-            color: Colors.grey[200],
-            dateFormatter: (year, month, day) =>
-                customDateFormatter(DateTime(year, month, day)),
-          );
-        },
-        initialTime:
-        const HourMinute(hour: 7).atDate(DateTime.now()),
-        events: _events,
-      ),
+              ? Center(child: Text('No hay Clases Programadas'))
+              : WeekView(
+                  dates: [
+                    DateTime.now(),
+                    for (int i = 1; i <= 6; i++)
+                      DateTime.now().add(Duration(days: i))
+                  ],
+                  dayBarStyleBuilder: (date) {
+                    return DayBarStyle(
+                      textStyle:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      color: Colors.grey[200],
+                      dateFormatter: (year, month, day) =>
+                          customDateFormatter(DateTime(year, month, day)),
+                    );
+                  },
+                  initialTime: const HourMinute(hour: 7).atDate(DateTime.now()),
+                  events: _events,
+                ),
     );
   }
 
@@ -206,8 +215,10 @@ class _CalendarState extends State<Calendar> {
               Text("Salon: ${descripcion.salon}"),
               Text("Docente: ${descripcion.docente}"),
               Text("Jornada: ${descripcion.jornada}"),
-              Text("Hora de inicio: ${DateFormat('HH:mm').format(descripcion.hora_inicial)}"),
-              Text("Hora de fin: ${DateFormat('HH:mm').format(descripcion.hora_final)}"),
+              Text(
+                  "Hora de inicio: ${DateFormat('HH:mm').format(descripcion.hora_inicial)}"),
+              Text(
+                  "Hora de fin: ${DateFormat('HH:mm').format(descripcion.hora_final)}"),
             ],
           ),
           actions: [
@@ -218,8 +229,8 @@ class _CalendarState extends State<Calendar> {
                   context,
                   MaterialPageRoute(
                       builder: (context) => EditarPage(
-                        idClase: descripcion.id,
-                      )),
+                            idClase: descripcion.id,
+                          )),
                 );
                 _loadEvents(); // Cargar eventos nuevamente al regresar
               },
@@ -235,8 +246,8 @@ class _CalendarState extends State<Calendar> {
                   context,
                   MaterialPageRoute(
                       builder: (context) => EliminarPage(
-                        idClase: descripcion.id,
-                      )),
+                            idClase: descripcion.id,
+                          )),
                 );
                 _loadEvents(); // Cargar eventos nuevamente al regresar
               },
@@ -270,12 +281,12 @@ class Descripcion {
   // Constructor con parámetros nombrados y obligatorios
   Descripcion(
       {required this.id,
-        required this.Materia,
-        required this.salon,
-        required this.docente,
-        required this.jornada,
-        required this.hora_inicial,
-        required this.hora_final});
+      required this.Materia,
+      required this.salon,
+      required this.docente,
+      required this.jornada,
+      required this.hora_inicial,
+      required this.hora_final});
 }
 
 void main() => runApp(MaterialApp(home: Calendar()));

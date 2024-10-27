@@ -74,7 +74,9 @@ class _LoadingScreenState extends State<LoadingScreen> {
               width: 150, // Ancho deseado del logo
               height: 150, // Alto deseado del logo
             ),
-            const SizedBox(height: 20), // Espacio entre el logo y el CircularProgressIndicator
+            const SizedBox(
+                height:
+                    20), // Espacio entre el logo y el CircularProgressIndicator
             const CircularProgressIndicator(),
           ],
         ),
@@ -82,4 +84,3 @@ class _LoadingScreenState extends State<LoadingScreen> {
     );
   }
 }
-
