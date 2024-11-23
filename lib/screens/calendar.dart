@@ -56,17 +56,6 @@ class _CalendarState extends State<Calendar> {
       final excel = Excel.createExcel();
       final Sheet sheet = excel['Horario Semestre $semestre'];
 
-      // Añadir encabezados
-      sheet.appendRow([
-        'Materia',
-        'Docente',
-        'Salón',
-        'Día',
-        'Hora Inicial',
-        'Hora Final',
-        'Jornada'
-      ]);
-
       // Obtener los datos de la base de datos
       final results = await _connection!.query(
         'SELECT m.nombre AS nombre_clase, d.Nombre AS nombre_docente, '
@@ -82,22 +71,61 @@ class _CalendarState extends State<Calendar> {
         [directorType, semestre],
       );
 
+      // Añadir encabezados con estilo
+      sheet.appendRow([
+        'Clase',
+        'Docente',
+        'Ubicación',
+        'Días',
+        'Hora Inicial',
+        'Hora Final',
+        'Jornada'
+      ]);
+
+      var headerStyle = CellStyle(
+        bold: true,
+        backgroundColorHex: "#D3D3D3",
+        horizontalAlign: HorizontalAlign.Center,
+      );
+
+      for (var col = 0; col < 7; col++) {
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0))
+          ..cellStyle = headerStyle;
+      }
+
+      // Ajustar el ancho de las columnas
+      for (var i = 0; i < 7; i++) {
+        sheet.setColAutoFit(i);
+      }
+
       // Añadir los datos
       for (var row in results) {
+        // Quitar los milisegundos y asegurar formato HH:mm:ss
+        String formatHora(String? hora) {
+          if (hora == null || hora.isEmpty) return '00:00:00';
+          return hora.split('.').first; // Divide por '.' y toma la primera parte
+        }
+
+        String horaInicial = formatHora(row['hora_inicial']?.toString());
+        String horaFinal = formatHora(row['hora_final']?.toString());
+
         sheet.appendRow([
-          row['nombre_clase'],
-          row['nombre_docente'],
-          row['ubicacion_salon'],
-          row['dias'],
-          row['hora_inicial'].toString(),
-          row['hora_final'].toString(),
-          row['jornada'],
+          row['nombre_clase'] ?? 'N/A',
+          row['nombre_docente'] ?? 'N/A',
+          row['ubicacion_salon'] ?? 'N/A',
+          row['dias'] ?? 'N/A',
+          horaInicial,
+          horaFinal,
+          row['jornada'] ?? 'N/A',
         ]);
       }
+      sheet.setColWidth(1, 35); // Cambia el ancho de la columna 2 (índice empieza en 1)
+      sheet.setColWidth(0, 20); // Cambia el ancho de la columna 2 (índice empieza en 1)
 
       // Guardar el archivo
       final directory = Directory('/storage/emulated/0/Download');
-      final String fileName = 'horario_semestre_${semestre}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+      final String fileName =
+          'horario_semestre_${semestre}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
       final String filePath = '${directory.path}/$fileName';
 
       final List<int>? fileBytes = excel.save();
@@ -127,6 +155,7 @@ class _CalendarState extends State<Calendar> {
       print('Error al exportar: $e');
     }
   }
+
 
   void _loadEvents() {
     fetchWeekViewEventsFromDatabase(
