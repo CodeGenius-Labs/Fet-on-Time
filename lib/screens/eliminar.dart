@@ -5,35 +5,100 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class EliminarPage extends StatefulWidget {
   final int idClase;
-  const EliminarPage({super.key, required this.idClase});
+  final String nombreClase;
+  const EliminarPage({super.key, required this.idClase, required this.nombreClase,});
   @override
   _EliminarPageState createState() => _EliminarPageState();
 }
 
 class _EliminarPageState extends State<EliminarPage> {
   MySqlConnection? _connection;
-  String jornada = ' ';
-  String nombre_viejo = ' ';
+  bool _isLoading = false;
 
   @override
   void initState() {
-    print("clase eliminar: ${widget.idClase}");
     super.initState();
-    _getnombre_clase().then((value) {
-      setState(() {
-        nombre_viejo = value;
-      });
-    });
-    _getjornada().then((value) {
-      setState(() {
-        jornada = value;
-      });
-    });
-    getConnection().then((connection) {
-      setState(() {
-        _connection = connection;
-      });
-    });
+    _inicializarDatos();
+  }
+
+  Future<void> _inicializarDatos() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final connection = await getConnection();
+
+      if (mounted) {
+        setState(() {
+          _connection = connection;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        _mostrarError('Error al inicializar: $e');
+      }
+    }
+  }
+
+  Future<void> _eliminarClase() async {
+    setState(() => _isLoading = true);
+
+    // Intentar conectar hasta 3 veces
+    int intentos = 0;
+    final maxIntentos = 3;
+
+    while (intentos < maxIntentos) {
+      try {
+        // Si no hay conexión, intentar establecerla
+        if (_connection == null) {
+          print('Intento de conexión ${intentos + 1}/$maxIntentos');
+          _connection = await getConnection();
+        }
+
+        // Intentar eliminar la clase
+        await _connection!.query(
+          'DELETE FROM clases WHERE idClases = ?',
+          [widget.idClase],
+        );
+
+        // Si llegamos aquí, la eliminación fue exitosa
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('status', 'calendar');
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('La clase se eliminó correctamente')),
+          );
+          Navigator.of(context).pop();
+        }
+        return; // Salir de la función si todo fue exitoso
+
+      } catch (e) {
+        print('Error en intento ${intentos + 1}: $e');
+        intentos++;
+        _connection = null; // Resetear la conexión para el siguiente intento
+
+        if (intentos < maxIntentos) {
+          // Esperar antes del siguiente intento
+          await Future.delayed(Duration(seconds: 2));
+        } else {
+          // Si ya agotamos los intentos, mostrar error
+          _mostrarError('No se pudo eliminar la clase después de $maxIntentos intentos');
+        }
+      }
+    }
+
+    // Asegurarnos de que _isLoading se establezca en false al final
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _mostrarError(String mensaje) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mensaje)),
+      );
+    }
+    debugPrint(mensaje);
   }
 
   @override
@@ -41,69 +106,45 @@ class _EliminarPageState extends State<EliminarPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Eliminar Clase'),
-        backgroundColor: const Color.fromARGB(255, 40, 140, 1), // Cambia el color del AppBar
+        backgroundColor: const Color.fromARGB(255, 40, 140, 1),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('¿Está seguro de que desea eliminar esta clase?'),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () async {
-                if (_connection != null) {
-                  try {
-                    print(
-                        'DELETE FROM clases WHERE idClases = ${widget.idClase} AND jornada = $jornada');
-                    // Realizar la eliminación de la clase en la base de datos
-                    await _connection!.query(
-                      'DELETE FROM clases WHERE idClases = ? AND jornada = ?',
-                      [widget.idClase, jornada],
-                    );
-                    SharedPreferences prefs =
-                        await SharedPreferences.getInstance();
-                    prefs.setString('status', 'calendar');
-                    // Muestra un SnackBar para indicar que la clase se eliminó correctamente
-                    const snackBar = SnackBar(
-                      content: Text('La clase se eliminó correctamente.'),
-                    );
-
-                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
-                    // Cierra la pantalla de eliminación después de eliminar la clase
-                    Navigator.of(context).pop();
-                  } catch (e) {
-                    // Manejar cualquier error que pueda ocurrir durante la eliminación
-                    print('Error al eliminar la clase: $e');
-                    // Puedes mostrar un mensaje de error al usuario si es necesario
-                  }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Error en la conexion, vuelve a intentarlo.'),
-                    ),
-                  );
-                  print('No se ha establecido una conexión a la base de datos.');
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 40, 140, 1), // Cambia el color del botón
-              ),
-              child: const Text('Eliminar Clase'),
+            Text(
+              '¿Está seguro de que desea eliminar la clase "${widget.nombreClase}"?',
+              style: Theme.of(context).textTheme.titleLarge,
+              textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 32),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                    ),
+                    child: const Text('Cancelar'),
+                  ),
+                  ElevatedButton(
+                    onPressed: _eliminarClase,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 40, 140, 1),
+                    ),
+                    child: const Text('Eliminar Clase'),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
     );
-  }
-
-  Future<String> _getnombre_clase() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('nombre_clase') ?? '';
-  }
-
-  Future<String> _getjornada() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('jornada') ?? '';
   }
 }
