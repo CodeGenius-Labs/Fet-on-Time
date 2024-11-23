@@ -262,6 +262,12 @@ class _CalendarState extends State<Calendar> {
                   initialTime: const HourMinute(hour: 7).atDate(DateTime.now()),
                   events: _events,
                 ),
+                floatingActionButton: FloatingActionButton(
+                  onPressed: _exportToExcel,
+                  backgroundColor: const Color.fromARGB(255, 40, 140, 1),
+                  child: const Icon(Icons.file_download),
+                  tooltip: 'Exportar horario',
+                ),
     );
   }
 
