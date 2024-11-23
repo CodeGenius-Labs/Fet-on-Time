@@ -247,6 +247,7 @@ class _CalendarState extends State<Calendar> {
                   MaterialPageRoute(
                       builder: (context) => EliminarPage(
                             idClase: descripcion.id,
+                            nombreClase: descripcion.Materia,
                           )),
                 );
                 _loadEvents(); // Cargar eventos nuevamente al regresar
