@@ -124,8 +124,8 @@ class _CalendarState extends State<Calendar> {
 
       // Guardar el archivo
       final directory = Directory('/storage/emulated/0/Download');
-      final String fileName =
-          'horario_semestre_${semestre}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+      final String currentDate = DateFormat('dd-MM-yyyy').format(DateTime.now());
+      final String fileName = 'horario_semestre_${semestre}_$currentDate.xlsx';
       final String filePath = '${directory.path}/$fileName';
 
       final List<int>? fileBytes = excel.save();
