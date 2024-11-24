@@ -98,6 +98,7 @@ class CrearPageState extends State<CrearPage> {
           return Scaffold(
             appBar: AppBar(
               title: const Text('Crear Clase'),
+              backgroundColor: Colors.green,
             ),
             body: const Center(
               child: CircularProgressIndicator(),
@@ -107,6 +108,7 @@ class CrearPageState extends State<CrearPage> {
           return Scaffold(
             appBar: AppBar(
               title: const Text('Crear Clase'),
+              backgroundColor: Colors.green,
             ),
             body: Center(
               child: Text('Error: ${snapshot.error}'),
@@ -116,6 +118,7 @@ class CrearPageState extends State<CrearPage> {
           return Scaffold(
             appBar: AppBar(
               title: const Text('Crear Clase'),
+              backgroundColor: Colors.green,
             ),
             body: _isLoading
                 ? const Center(
@@ -229,6 +232,9 @@ class CrearPageState extends State<CrearPage> {
                               loadDropdownOptions(selectedJornada);
                             });
                           },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                          ),
                           child: const Text('Guardar Clase'),
                         ),
                       ],
