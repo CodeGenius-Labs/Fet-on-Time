@@ -149,11 +149,6 @@ class login extends StatelessWidget {
                   )
                 ],
               )),
-          const SizedBox(height: 50),
-          const Text(
-            'Crear Una Nueva Cuenta',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          )
         ],
       ),
     );

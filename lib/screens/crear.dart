@@ -280,8 +280,9 @@ class CrearPageState extends State<CrearPage> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
+
               },
-              child: const Text('Cerrar'),
+              child: const Text('Cerrar',style: TextStyle(color: Colors.green,),),
             ),
           ],
         );
