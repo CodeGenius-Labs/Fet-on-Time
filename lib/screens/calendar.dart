@@ -90,7 +90,7 @@ class _CalendarState extends State<Calendar> {
 
       for (var col = 0; col < 7; col++) {
         sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0))
-          ..cellStyle = headerStyle;
+          .cellStyle = headerStyle;
       }
 
       // Ajustar el ancho de las columnas
@@ -222,6 +222,8 @@ class _CalendarState extends State<Calendar> {
             start: startTime,
             end: endTime,
             onTap: () => _showEventDetails(context, descripcion),
+            backgroundColor: const Color.fromARGB(255, 40, 140, 1), // Añade este parámetro
+            textStyle: const TextStyle(color: Colors.white), // Opcional: para cambiar el color del texto
           ),
         );
       }
@@ -268,6 +270,7 @@ class _CalendarState extends State<Calendar> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Semana'),
+        backgroundColor: Colors.green,
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
@@ -349,8 +352,9 @@ class _CalendarState extends State<Calendar> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromRGBO(40, 140, 1, 1),
+
               ),
-              child: const Text('Editar'),
+              child: const Text('Editar', style: TextStyle(color: Colors.white,),),
             ),
             TextButton(
               onPressed: () async {
@@ -368,13 +372,16 @@ class _CalendarState extends State<Calendar> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromRGBO(40, 140, 1, 1),
               ),
-              child: const Text("Eliminar"),
+              child: const Text("Eliminar", style: TextStyle(color: Colors.white,),),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromRGBO(40, 140, 1, 1),
+                );
               },
-              child: Text('Cerrar'),
+              child: Text('Cerrar', style: TextStyle(color: Colors.black,),),
             ),
           ],
         );

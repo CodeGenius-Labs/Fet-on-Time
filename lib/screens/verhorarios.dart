@@ -134,7 +134,7 @@ class _VerHorariosState extends State<VerHorarios> {
                             _downloadAllSchedules(); // Llamamos a la función de descarga
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: Colors.green,
                             padding: const EdgeInsets.symmetric(
                               vertical: 20,
                               horizontal: 30,
