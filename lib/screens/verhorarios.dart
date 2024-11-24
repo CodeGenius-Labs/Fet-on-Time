@@ -210,6 +210,7 @@ class _VerHorariosState extends State<VerHorarios> {
   Future<void> _downloadAllSchedules() async {
     try {
       final excel = Excel.createExcel();
+
       final Sheet sheet = excel['Horario Total'];
 
       // Obtener los datos de la base de datos
@@ -222,9 +223,24 @@ class _VerHorariosState extends State<VerHorarios> {
             'INNER JOIN materias m ON c.idmaterias = m.id '
             'INNER JOIN salones s ON c.idSalones = s.idSalones '
             'INNER JOIN fecha_clase fc ON c.idfecha_clase = fc.idfecha_clase '
-            'WHERE c.programa = ? '  // Filtra por semestre
-            'ORDER BY fc.dias, c.hora_inicial, c.semestre',  // Ordenar por días y horas
-        [directorType],  // Pasa tanto el tipo de director como el semestre
+            'WHERE c.programa = ? '
+            'ORDER BY '
+            'CAST(c.semestre AS SIGNED), ' // Primero por semestre
+            'CASE ' // Segundo por jornada
+            'WHEN c.jornada = "diurna" THEN 1 '
+            'WHEN c.jornada = "nocturna" THEN 2 '
+            'END, '
+            'CASE LOWER(fc.dias) ' // Tercero por días
+            'WHEN "lunes" THEN 1 '
+            'WHEN "martes" THEN 2 '
+            'WHEN "miercoles" THEN 3 '
+            'WHEN "jueves" THEN 4 '
+            'WHEN "viernes" THEN 5 '
+            'WHEN "sabado" THEN 6 '
+            'WHEN "domingo" THEN 7 '
+            'END, '
+            'TIME(c.hora_inicial)', // Cuarto por hora
+        [directorType],
       );
 
 
@@ -237,7 +253,8 @@ class _VerHorariosState extends State<VerHorarios> {
         'Días',
         'Hora Inicial',
         'Hora Final',
-        'Jornada'
+        'Jornada',
+        'Semestre'
       ]);
 
       var headerStyle = CellStyle(
@@ -246,13 +263,13 @@ class _VerHorariosState extends State<VerHorarios> {
         horizontalAlign: HorizontalAlign.Center,
       );
 
-      for (var col = 0; col < 7; col++) {
+      for (var col = 0; col < 8; col++) {
         sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0))
           ..cellStyle = headerStyle;
       }
 
       // Ajustar el ancho de las columnas
-      for (var i = 0; i < 7; i++) {
+      for (var i = 0; i < 8; i++) {
         sheet.setColAutoFit(i);
       }
 
@@ -275,6 +292,7 @@ class _VerHorariosState extends State<VerHorarios> {
           horaInicial,
           horaFinal,
           row['jornada'] ?? 'N/A',
+          row['semestre'] ?? 'N/A',
         ]);
       }
       sheet.setColWidth(1, 35); // Cambia el ancho de la columna 2 (índice empieza en 1)
@@ -282,11 +300,11 @@ class _VerHorariosState extends State<VerHorarios> {
 
       // Guardar el archivo
       final directory = Directory('/storage/emulated/0/Download');
-      final String fileName =
-          'horario_semestre_${semestre}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+      final String currentDate = DateFormat('dd-MM-yyyy').format(DateTime.now());
+      final String fileName = 'horario_${directorType}_$currentDate.xlsx';
       final String filePath = '${directory.path}/$fileName';
 
-      final List<int>? fileBytes = excel.save();
+      final List<int>? fileBytes = excel.encode();
       if (fileBytes != null) {
         File(filePath)
           ..createSync(recursive: true)
